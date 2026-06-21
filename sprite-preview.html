@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Maple Tactics — 실물 스프라이트 검수 갤러리</title>
+<style>
+  *{box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+  body{margin:0;background:#0e1320;color:#e6ecff}
+  header{padding:14px 20px;background:#161d31;border-bottom:1px solid #2c3a5e;position:sticky;top:0;z-index:5}
+  h1{margin:0;font-size:18px;color:#ffcf4a}
+  h1 small{color:#8a97bd;font-weight:400;font-size:12px}
+  .bar{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;font-size:13px;color:#8a97bd}
+  .btn{background:#1d2740;border:1px solid #2c3a5e;color:#e6ecff;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600}
+  .btn.on{background:#ffcf4a;color:#222;border-color:#ffcf4a}
+  .costhead{padding:14px 20px 4px;font-size:15px;font-weight:800;color:#ffcf4a;border-top:1px solid #2c3a5e;margin-top:6px}
+  #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;padding:6px 20px 16px}
+  .card{background:#161d31;border:1px solid #2c3a5e;border-radius:12px;padding:8px}
+  .card .nm{font-size:13px;font-weight:700;text-align:center}
+  .card .meta{font-size:10px;color:#8a97bd;text-align:center;margin-bottom:4px}
+  .card canvas{width:100%;height:150px;display:block;background:radial-gradient(ellipse at 50% 78%,#1b2740,#0c1120);border-radius:8px}
+  .tierlab{display:flex;justify-content:space-around;font-size:10px;color:#8a97bd;margin-top:2px}
+  .legend{padding:10px 20px;font-size:12px;color:#8a97bd;line-height:1.7}
+  .legend b{color:#ffcf4a}
+</style>
+</head>
+<body>
+<header>
+  <h1>🖼️ MAPLE TACTICS — 실물 스프라이트 검수 <small>코스트별 옷 · ★성 오라 · 공격모션</small></h1>
+  <div class="bar">모션:
+    <button class="btn on" data-mode="auto">자동(대기↔공격)</button>
+    <button class="btn" data-mode="idle">대기</button>
+    <button class="btn" data-mode="attack">공격</button>
+    <span style="margin-left:12px">속도:</span>
+    <button class="btn" data-spd="0.6">느리게</button>
+    <button class="btn on" data-spd="1">보통</button>
+    <button class="btn" data-spd="1.8">빠르게</button>
+  </div>
+</header>
+<div class="legend">각 카드는 한 직업을 <b>★1 · ★2 · ★3</b> 으로 보여줍니다(★2 하늘빛 오라, ★3 황금 오라+입자+크기↑). 코스트별로 묶여 있어 <b>옷 등급 차이</b>를 비교할 수 있어요.</div>
+<div id="grid"></div>
+
+<script>
+const JOBS=[
+ ['swordman','검사','warrior','guardian',1],['magician','매지션','mage','caster',1],['archer1','아처','archer','marksman',1],['rogue','로그','thief','striker',1],['pirate1','해적','pirate','striker',1],
+ ['page','페이지','warrior','guardian',2],['wizard','썬콜위자드','mage','caster',2],['hunter','헌터','archer','marksman',2],['assassin','어쌔신','thief','marksman',2],['brawler','인파이터','pirate','striker',2],
+ ['knight','나이트','warrior','guardian',3],['priest','프리스트','mage','support',3],['ranger','레인저','archer','marksman',3],['hermit','허밋','thief','striker',3],
+ ['hero','히어로','warrior','striker',4],['bishop','비숍','mage','support',4],['bowmaster','보우마스터','archer','marksman',4],['nightlord','나이트로드','thief','marksman',4],
+ ['darkknight','다크나이트','warrior','guardian',5],['archmage','아크메이지','mage','caster',5],['viper','바이퍼','pirate','striker',5],
+];
+function loadImg(src){ const r={img:new Image(),ok:false}; r.img.onload=()=>r.ok=true; r.img.onerror=()=>r.ok=false; r.img.src=src; return r; }
+const SET={};
+function sprites(key){ if(SET[key])return SET[key]; const s={idle:loadImg('assets/units/'+key+'.png'),atk:[loadImg('assets/units/'+key+'_a0.png'),loadImg('assets/units/'+key+'_a1.png'),loadImg('assets/units/'+key+'_a2.png')]}; SET[key]=s; return s; }
+
+const clsK={warrior:'전사',mage:'마법사',archer:'궁수',thief:'도적',pirate:'해적'};
+const roleK={guardian:'수호자',striker:'근접',marksman:'원거리',caster:'법사',support:'보조'};
+const cards=[];
+const grid=document.getElementById('grid');
+for(let cost=1;cost<=5;cost++){
+  const h=document.createElement('div'); h.className='costhead'; h.style.gridColumn='1/-1'; h.textContent='💰 '+cost+'코스트';
+  grid.appendChild(h);
+  JOBS.filter(j=>j[4]===cost).forEach(j=>{
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML=`<div class="nm">${j[1]}</div><div class="meta">${clsK[j[2]]} · ${roleK[j[3]]}</div>
+      <canvas width="720" height="450"></canvas><div class="tierlab"><span>★1</span><span>★2</span><span>★3</span></div>`;
+    grid.appendChild(card);
+    cards.push({job:j, ctx:card.querySelector('canvas').getContext('2d')});
+  });
+}
+
+let gMode='auto', gSpd=1;
+function drawTier(ctx,cx,cy,key,star,mode,p){
+  const set=sprites(key);
+  const rad=42*(star>=3?1.14:star>=2?1.06:1);
+  // 오라
+  const tt=performance.now()*0.001, pulse=0.5+0.5*Math.sin(tt*3);
+  if(star>=2){
+    ctx.save(); ctx.globalAlpha=0.22+0.18*pulse; ctx.fillStyle=star>=3?'#ffd24a':'#7fd0ff';
+    ctx.beginPath(); ctx.arc(cx,cy-rad*0.5,rad*0.9+(star>=3?9:6)+pulse*3,0,7); ctx.fill(); ctx.restore();
+    if(star>=3){ ctx.strokeStyle='rgba(255,210,74,'+(0.4+0.3*pulse)+')'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(cx,cy-rad*0.5,rad*0.95,0,7); ctx.stroke();
+      for(let i=0;i<6;i++){ const a=tt*1.6+i*1.05; ctx.fillStyle='rgba(255,224,120,0.9)'; ctx.beginPath(); ctx.arc(cx+Math.cos(a)*rad*0.9,cy-rad*0.5+Math.sin(a)*rad*0.9,2,0,7); ctx.fill(); } }
+  }
+  // 스프라이트(공격 프레임)
+  let pic=set.idle;
+  if(mode==='attack'||(mode==='auto'&&p>=0.6)){ const ap=mode==='auto'?(p-0.6)/0.4:p; const fr=Math.min(2,Math.floor(ap*3)); if(set.atk[fr]&&set.atk[fr].ok)pic=set.atk[fr]; }
+  if(pic&&pic.ok){ const box=rad*2.6, iw=pic.img.naturalWidth||box, ih=pic.img.naturalHeight||box, k=Math.min(box/iw,box/ih), dw=iw*k, dh=ih*k;
+    ctx.drawImage(pic.img,cx-dw/2,cy-dh,dw,dh); }
+  else { ctx.fillStyle='#445'; ctx.beginPath(); ctx.arc(cx,cy-rad*0.5,rad*0.5,0,7); ctx.fill(); }
+  // 그림자
+  ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(cx,cy,rad*0.5,rad*0.16,0,0,7); ctx.fill();
+}
+function loop(now){
+  const dur=gMode==='idle'?1.4:gMode==='attack'?0.6:1.6;
+  const p=((now/1000*gSpd)%dur)/dur;
+  for(const c of cards){ const ctx=c.ctx; ctx.clearRect(0,0,720,450);
+    drawTier(ctx,130,370,c.job[0],1,gMode,p);
+    drawTier(ctx,360,370,c.job[0],2,gMode,p);
+    drawTier(ctx,590,370,c.job[0],3,gMode,p);
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{gMode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('on',x===b));});
+document.querySelectorAll('[data-spd]').forEach(b=>b.onclick=()=>{gSpd=+b.dataset.spd;document.querySelectorAll('[data-spd]').forEach(x=>x.classList.toggle('on',x===b));});
+</script>
+</body>
+</html>
