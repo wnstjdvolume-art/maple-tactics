@@ -461,23 +461,25 @@ function addUnit(key,star){
 function combineCheck(key,star){
   if(star>=3) return;
   if(countUnits(key,star)>=3){
-    // 3개 제거(보드 우선 위치 유지)
-    let removed=0, keepPos=null;
+    // 3개 제거(보드 우선 위치 유지) + 아이템 계승
+    let removed=0, keepPos=null, carried=[];
     // 보드에 있던 것 우선 위치 기억
     for(let i=0;i<G.board.length;i++){
       const u=G.board[i];
       if(u&&u.key===key&&u.star===star&&removed<3){
         if(!keepPos) keepPos={col:u.col,row:u.row};
+        if(u.items&&u.items.length) carried.push(...u.items);   // ★아이템 수거
         G.board[i]=null; removed++;
       }
     }
     for(let i=0;i<G.bench.length;i++){
       const u=G.bench[i];
-      if(u&&u.key===key&&u.star===star&&removed<3){ G.bench[i]=null; removed++; }
+      if(u&&u.key===key&&u.star===star&&removed<3){ if(u.items&&u.items.length) carried.push(...u.items); G.bench[i]=null; removed++; }
     }
     G.board=G.board.filter(Boolean);
-    // 승급 유닛 생성
-    const up={uid:UID++,key,star:star+1};
+    // 승급 유닛 생성 (★아이템 최대 3개 계승, 초과분은 가방으로 반환)
+    const up={uid:UID++,key,star:star+1,items:carried.slice(0,3)};
+    carried.slice(3).forEach(it=>{ if(COMPONENTS[it]) G.comps.push(it); else G.items.push(it); });
     if(keepPos && boardCount()<BOARD_CAP[G.level]){
       up.col=keepPos.col; up.row=keepPos.row; G.board.push(up);
     } else {
@@ -485,6 +487,7 @@ function combineCheck(key,star){
       if(s<0)G.bench.push(up); else G.bench[s]=up;
     }
     flash('⭐ '+UNITS[key].name+' '+(star+1)+'성 승급!','var(--gold)');
+    if(carried.length>3) flash('가방으로 반환된 아이템 '+(carried.length-3)+'개','#9ad0ff');
     combineCheck(key,star+1);
   }
 }

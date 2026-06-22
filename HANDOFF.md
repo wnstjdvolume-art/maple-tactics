@@ -44,6 +44,7 @@ git clone 한 maple-tactics/MapleTactics.html 이 내가 원하는 완성 게임
 
 ## 6. 아이템 (조각 조합)
 드롭=조각5종(검/갑옷/장갑/보주/망토). 조각 2개 합쳐 완성템 15종(`RECIPES`). 유닛에 최대 3장착, 미완성 조각 위에 끼우면 자동 합성. 조합표 버튼 제공.
+**★별 승급 시 아이템 계승(필수)**: 같은 직업 3개 합쳐 승급할 때, 3유닛이 들고 있던 아이템을 모두 모아 **승급 유닛에 최대 3개 계승**하고, 초과분은 가방(`G.comps`/`G.items`)으로 반환한다. (승급 유닛을 빈손으로 만들면 안 됨 — `combineCheck` 참고)
 
 ## 7. ★스프라이트 / 코스트별 외형 (MSU 공식 에셋 매핑)
 `MapleTactics.html` 하단의 설정 표(`HAIR / OVERALL2 / HAT / CAPE / WEAPON / FIVE_HAT / MOB_ID`)가 외형을 결정한다. 현재는 maplestory.io 라이브 합성 URL을 쓰며, **Verse8에서는 같은 itemId를 MSU 공식 에셋으로 매핑**하면 된다.
