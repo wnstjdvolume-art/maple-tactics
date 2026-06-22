@@ -38,9 +38,9 @@ const MOB_ID = {
 function mobSpriteUrl(key){ return `https://maplestory.io/api/GMS/255/mob/${MOB_ID[key]}/render/stand`; }
 
 // 4) 사용 예시 — 캐릭터를 화면에 그리기
-//   (A) HTML/React: <img src={jobSpriteUrl('swordman')} crossOrigin="anonymous" />
+//   (A) HTML/React: <img src={jobSpriteUrl('swordman')} />          // ★crossOrigin 설정하지 말 것
 //   (B) Canvas:
-function loadSprite(url){ const img = new Image(); img.crossOrigin = 'anonymous'; img.src = url; return img; }
+function loadSprite(url){ const img = new Image(); img.src = url; return img; }   // ★crossOrigin 금지 (켜면 로드 실패→깨짐)
 // 유닛 렌더 시: const img = loadSprite(jobSpriteUrl(unit.key)); ctx.drawImage(img, x - img.width/2, y - img.height, img.width, img.height);
 // (이미지 로드는 비동기라, onload 후 다시 그리거나 캐시해 둔다)
 ```
@@ -53,9 +53,9 @@ function loadSprite(url){ const img = new Image(); img.crossOrigin = 'anonymous'
 
 ## 중요 (자연어)
 - 이미지 로드는 **비동기**다. `img.onload`에서 다시 렌더하거나, 시작 시 모든 스프라이트를 미리 로드해 캐시해라(매 프레임 new Image() 금지).
-- canvas에 그릴 땐 `img.crossOrigin='anonymous'` 를 꼭 설정해라(maplestory.io는 CORS 허용).
+- ★canvas에 그릴 때 `img.crossOrigin='anonymous'` 를 **절대 설정하지 마라**. maplestory.io는 CORS 헤더가 없어서, 이걸 켜면 이미지 로드 자체가 실패해 깨진 이미지/동그라미로만 나온다. 그냥 `img.src=URL` 만 해라.
 - 이건 **maplestory.io(커뮤니티 공개 API)** 라 "지금 바로 캐릭터를 띄워 테스트"하는 용도다.
 - **최종 MSU 제출용 공식 에셋**은 Agent8 상단 **Resource 탭**에서 MSU 공식 메이플 캐릭터/몬스터를 검색·추가해 그 리소스를 쓰는 게 정식이다. 일단 위 URL로 동작시키고, 제출 직전 Resource 탭의 공식 에셋으로 교체하면 된다.
 
 ---
-[지시] 위 charUrl / jobSpriteUrl / mobSpriteUrl 코드를 그대로 넣고, 각 유닛/몬스터를 해당 URL 이미지로 렌더해라. 이미지는 미리 로드해 캐시하고 canvas는 crossOrigin='anonymous'로. 이러면 캐릭터/몬스터가 화면에 바로 나온다.
+[지시] 위 charUrl / jobSpriteUrl / mobSpriteUrl 코드를 그대로 넣고, 각 유닛/몬스터를 해당 URL 이미지로 렌더해라. 이미지는 미리 로드해 캐시하고, ★crossOrigin은 설정하지 마라(켜면 깨진다). 이러면 캐릭터/몬스터가 화면에 바로 나온다.
