@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Maple Tactics — 에셋 한눈에 보기 (캐릭터·몬스터·무기·스킬)</title>
+<style>
+  *{box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+  body{margin:0;background:#0e1320;color:#e6ecff}
+  header{padding:14px 20px;background:#161d31;border-bottom:1px solid #2c3a5e;position:sticky;top:0;z-index:5}
+  h1{margin:0;font-size:18px;color:#ffcf4a}
+  h2{margin:22px 20px 6px;font-size:16px;color:#ffcf4a;border-top:1px solid #2c3a5e;padding-top:14px}
+  .costhead{margin:14px 20px 2px;font-size:14px;font-weight:800;color:#9ad0ff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;padding:6px 20px}
+  .cell{background:#161d31;border:1px solid #2c3a5e;border-radius:10px;padding:8px;text-align:center}
+  .cell img{width:80px;height:90px;object-fit:contain;image-rendering:pixelated;background:radial-gradient(ellipse at 50% 80%,#1b2740,#0c1120);border-radius:8px;display:block;margin:0 auto}
+  .cell .nm{font-size:12px;font-weight:700;margin-top:4px}
+  .cell .meta{font-size:10px;color:#8a97bd}
+  .wcell img{width:60px;height:60px}
+  .legend{padding:4px 20px 16px;font-size:12px;color:#8a97bd}
+  canvas.fx{width:120px;height:90px;background:radial-gradient(ellipse at center,#1b2740,#0c1120);border-radius:8px;display:block;margin:0 auto}
+</style>
+</head>
+<body>
+<header><h1>🍁 MAPLE TACTICS — 에셋 한눈에 보기</h1>
+<div class="legend">게임과 동일한 스프라이트(라이브 maplestory.io). 인터넷 연결 필요. 안 보이면 새로고침.</div></header>
+
+<h2>🧙 직업 캐릭터 (코스트별 옷차림: 1코 맨몸 → 2코 투구 → 3코 상하의 → 4코 캐쉬 → 5코 탈것)</h2>
+<div id="chars"></div>
+
+<h2>👹 몬스터 & 보스</h2>
+<div id="mobs" class="grid"></div>
+
+<h2>⚔️ 무기 (1~3코 기본 / 4~5코 에픽)</h2>
+<div id="weapons" class="grid"></div>
+
+<h2>✨ 스킬 이펙트 (전투 중 궁극기 연출)</h2>
+<div id="fx" class="grid"></div>
+
+<script>
+// ===== 데이터 (게임과 동일) =====
+const HAIR={warrior:30030,mage:33000,archer:30150,thief:30240,pirate:30060};
+const OVERALL2={warrior:{3:1050021,4:1050062,5:1050098},mage:{3:1050053,4:1050061,5:1050097},archer:{3:1050055,4:1050063},thief:{3:1050056,4:1050064},pirate:{3:1050055,4:1050062,5:1050096}};
+const HAT={warrior:1002005,mage:1003308,archer:1003135,thief:1002759,pirate:1002553};
+const CAPE={4:1102041,5:1102041};
+const WEAPON={swordman:1302000,page:1302000,knight:1302359,hero:1402268,darkknight:1402267,
+ magician:1372000,wizard:1372000,priest:1372000,bishop:1382276,archmage:1382277,
+ archer1:1452000,hunter:1452000,ranger:1452000,bowmaster:1452269,
+ rogue:1332000,assassin:1472000,hermit:1332000,nightlord:1472278,
+ pirate1:1492000,brawler:1482000,viper:1482235};
+const JOBS=[
+ ['swordman','검사','warrior',1],['page','페이지','warrior',2],['knight','나이트','warrior',3],['hero','히어로','warrior',4],['darkknight','다크나이트','warrior',5],
+ ['magician','매지션','mage',1],['wizard','썬콜위자드','mage',2],['priest','프리스트','mage',3],['bishop','비숍','mage',4],['archmage','아크메이지','mage',5],
+ ['archer1','아처','archer',1],['hunter','헌터','archer',2],['ranger','레인저','archer',3],['bowmaster','보우마스터','archer',4],
+ ['rogue','로그','thief',1],['assassin','어쌔신','thief',2],['hermit','허밋','thief',3],['nightlord','나이트로드','thief',4],
+ ['pirate1','해적','pirate',1],['brawler','인파이터','pirate',2],['viper','바이퍼','pirate',5],
+];
+const MOBS=[
+ ['달팽이',100000],['주황버섯',100004],['리본돼지',1210101],['와일드보어',2230102],['스텀프',100005],['파란버섯',2220100],
+ ['주니어네키',2130103],['커즈아이',3230100],['좀비버섯',2230101],['예티',6300000],['드레이크',2600224],['그리피',2600007],
+ ['머쉬맘(보스)',2600208],['자쿰(보스)',8800000],['혼테일(보스)',8810018],['발록(보스)',6400006],
+];
+const WEAPONS=[
+ ['한손검(기본)',1302000],['스태프(기본)',1372000],['활(기본)',1452000],['단검(기본)',1332000],['클로(기본)',1472000],['너클(기본)',1482000],['건(기본)',1492000],
+ ['제네시스 대검',1402268],['실드제네시스 대검',1402267],['아케인 스태프',1382276],['제네시스 스태프',1382277],['아케인 보우',1452269],['아케인 클로',1472278],['아케인 너클',1482235],
+];
+
+function charUrl(ids){var p=ids.filter(Boolean).map(function(id){return encodeURIComponent(JSON.stringify({itemId:id,region:'GMS',version:'255'}));});return 'https://maplestory.io/api/character/'+p.join(',')+'/stand1/0';}
+function jobUrl(key,cls,cost){return charUrl([2000,12000,21744,HAIR[cls],(OVERALL2[cls]||{})[cost],(cost>=2?HAT[cls]:null),CAPE[cost],WEAPON[key]]);}
+function mobUrl(id){return 'https://maplestory.io/api/GMS/255/mob/'+id+'/render/stand';}
+function weaponIcon(id){return 'https://maplestory.io/api/GMS/255/item/'+id+'/icon';}
+
+// 캐릭터 (코스트별 그룹)
+const FIVE_HAT={cash:1002773,zakum:1002551};
+function jobUrl5(key,cls,style){return charUrl([2000,12000,21744,HAIR[cls],(OVERALL2[cls]||{})[5],FIVE_HAT[style],CAPE[5],WEAPON[key]]);}
+const charsRoot=document.getElementById('chars');
+for(let c=1;c<=5;c++){
+  const h=document.createElement('div'); h.className='costhead'; h.textContent='💰 '+c+'코스트'+(c===5?'  (좌=캐시 크라운 / 우=보스 투구)':'');
+  charsRoot.appendChild(h);
+  const g=document.createElement('div'); g.className='grid';
+  JOBS.filter(j=>j[3]===c).forEach(j=>{
+    const d=document.createElement('div'); d.className='cell';
+    if(c===5){
+      d.innerHTML='<div style="display:flex;gap:4px;justify-content:center"><img style="width:64px;height:80px" src="'+jobUrl5(j[0],j[2],'cash')+'" loading="lazy"><img style="width:64px;height:80px" src="'+jobUrl5(j[0],j[2],'zakum')+'" loading="lazy"></div><div class="nm">'+j[1]+'</div><div class="meta">캐시 / 투구</div>';
+    } else {
+      d.innerHTML='<img src="'+jobUrl(j[0],j[2],j[3])+'" loading="lazy"><div class="nm">'+j[1]+'</div><div class="meta">'+j[2]+'</div>';
+    }
+    g.appendChild(d);
+  });
+  charsRoot.appendChild(g);
+}
+// 몬스터
+const mg=document.getElementById('mobs');
+MOBS.forEach(m=>{ const d=document.createElement('div'); d.className='cell'; d.innerHTML='<img src="'+mobUrl(m[1])+'" loading="lazy"><div class="nm">'+m[0]+'</div>'; mg.appendChild(d); });
+// 무기
+const wg=document.getElementById('weapons');
+WEAPONS.forEach(w=>{ const d=document.createElement('div'); d.className='cell wcell'; d.innerHTML='<img src="'+weaponIcon(w[1])+'" loading="lazy"><div class="nm">'+w[0]+'</div><div class="meta">'+w[1]+'</div>'; wg.appendChild(d); });
+
+// ===== 스킬 이펙트 데모 (캔버스 애니메이션) =====
+const FX=[
+ ['메테오 (아크메이지)','meteor','#ff8a3a'],['체인 라이트닝 (썬콜)','chain','#cfe6ff'],['고드름 (매지션/어쌔신)','ice','#a8ecff'],
+ ['검기 파동 (히어로)','swordwave','#ffe27a'],['흑염 임팩트 (다크나이트)','darkimpact','#b06aff'],['홀리 노바 (비숍)','holynova','#fff0a0'],
+ ['화살 폭풍 (보우마스터)','hurricane','#cfe8a0'],['표창 난사 (나이트로드)','shuriken','#dfe6f4'],
+ ['세비지블로우 斬 (도적)','slash','#ff6a6a'],['화살비 (궁수)','arrowrain','#d6efa0'],['빛기둥 (프리스트)','pillar','#fff0a0'],['대형폭발','burst','#ffd24a'],
+];
+const fxRoot=document.getElementById('fx');
+const demos=[];
+FX.forEach(f=>{ const d=document.createElement('div'); d.className='cell'; d.innerHTML='<canvas class="fx" width="240" height="180"></canvas><div class="nm">'+f[0]+'</div>'; fxRoot.appendChild(d); demos.push({type:f[1],color:f[2],ctx:d.querySelector('canvas').getContext('2d')}); });
+function drawFX(ctx,type,color,t){
+  ctx.clearRect(0,0,240,180); const cx=120,cy=120;
+  if(type==='lightning'){ const p=(t%0.6)/0.6; ctx.globalAlpha=Math.max(0,1-p); ctx.strokeStyle=color; ctx.lineWidth=4; ctx.shadowColor=color; ctx.shadowBlur=16; ctx.beginPath(); let y=0,x=cx; ctx.moveTo(x,y); while(y<cy){y+=12+Math.random()*10;x=cx+(Math.random()*30-15);ctx.lineTo(x,Math.min(y,cy));} ctx.stroke(); ctx.shadowBlur=0; ctx.globalAlpha=1; }
+  else if(type==='beam'){ const p=(t%0.6)/0.6; ctx.globalAlpha=Math.max(0,1-p); ctx.lineCap='round'; ctx.shadowColor=color; ctx.shadowBlur=16; ctx.strokeStyle=color; ctx.lineWidth=16+(1-p)*8; ctx.beginPath(); ctx.moveTo(20,60); ctx.lineTo(220,120); ctx.stroke(); ctx.strokeStyle='#fff'; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(20,60); ctx.lineTo(220,120); ctx.stroke(); ctx.shadowBlur=0; ctx.globalAlpha=1; }
+  else if(type==='slash'){ for(let i=0;i<5;i++){ const p=((t+i*0.08)%0.5)/0.5; ctx.save(); ctx.translate(cx+(i-2)*14,cy-20+(i-2)*8); ctx.rotate(i); ctx.globalAlpha=Math.max(0,1-p); ctx.strokeStyle=color; ctx.lineWidth=4; ctx.shadowColor=color; ctx.shadowBlur=10; ctx.beginPath(); ctx.moveTo(-26*(0.4+p),0); ctx.lineTo(26*(0.4+p),0); ctx.stroke(); ctx.restore(); } ctx.globalAlpha=1; ctx.shadowBlur=0; ctx.fillStyle=color; ctx.font='bold 34px serif'; ctx.textAlign='center'; ctx.globalAlpha=Math.max(0,1-(t%0.9)/0.9); ctx.fillText('斬',cx,cy-30); ctx.globalAlpha=1; }
+  else if(type==='pillar'){ for(let i=0;i<3;i++){ const p=((t+i*0.1)%0.6)/0.6, w=8+(1-Math.abs(p-0.5)*2)*30, X=cx+(i-1)*50; ctx.globalAlpha=Math.max(0,1-p); const g=ctx.createLinearGradient(X,10,X,cy); g.addColorStop(0,'rgba(255,255,210,0)'); g.addColorStop(1,color); ctx.fillStyle=g; ctx.fillRect(X-w/2,10,w,cy-10);} ctx.globalAlpha=1; }
+  else if(type==='arrowrain'){ ctx.strokeStyle=color; ctx.lineWidth=2; for(let i=0;i<8;i++){ const p=((t+i*0.12)%0.5)/0.5, X=30+i*24, Y=10+p*100; ctx.globalAlpha=Math.max(0,1-p); ctx.beginPath(); ctx.moveTo(X,Y-14); ctx.lineTo(X,Y); ctx.stroke(); } ctx.globalAlpha=1; }
+  else if(type==='burst'){ const p=(t%0.6)/0.6, R=70*Math.max(0.05,p); const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R); g.addColorStop(0,'rgba(255,255,255,'+(0.85*(1-p))+')'); g.addColorStop(0.45,color); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.globalAlpha=Math.max(0,1-p); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=4*(1-p)+1; ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.stroke(); ctx.globalAlpha=1; }
+  else if(type==='circle'){ const p=(t%0.8)/0.8, R=10+p*40; ctx.save(); ctx.translate(cx,cy); ctx.globalAlpha=Math.max(0,1-p); ctx.strokeStyle=color; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(0,0,R,R*0.4,0,0,7); ctx.stroke(); for(let q=0;q<8;q++){const a=t*2+q*0.785; ctx.beginPath(); ctx.moveTo(Math.cos(a)*R,Math.sin(a)*R*0.4); ctx.lineTo(Math.cos(a)*(R-6),Math.sin(a)*(R-6)*0.4); ctx.stroke();} ctx.restore(); ctx.globalAlpha=1; }
+  else if(type==='meteor'){ const p=(t%0.7)/0.7; ctx.save(); ctx.shadowColor=color; ctx.shadowBlur=14; if(p<0.78){ const sx=200-(200-cx)*(p/0.78), sy=-20+(cy+20)*(p/0.78); ctx.fillStyle=color; ctx.beginPath(); ctx.arc(sx,sy,9,0,7); ctx.fill(); ctx.globalAlpha=0.4; ctx.beginPath(); ctx.arc(sx+18,sy-12,5,0,7); ctx.fill(); } else { const q=(p-0.78)/0.22, R=55*q; ctx.globalAlpha=1-q; ctx.strokeStyle=color; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.stroke(); } ctx.shadowBlur=0; ctx.globalAlpha=1; ctx.restore(); }
+  else if(type==='chain'){ const pts=[[20,60],[80,115],[150,65],[220,120]]; const seg=1+Math.floor((t*2.5)%3); ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=3; ctx.shadowColor=color; ctx.shadowBlur=12; for(let i=0;i<seg;i++){ const a=pts[i],b=pts[i+1]; ctx.beginPath(); ctx.moveTo(a[0],a[1]); for(let s=1;s<=4;s++) ctx.lineTo(a[0]+(b[0]-a[0])*s/4+(Math.random()*16-8),a[1]+(b[1]-a[1])*s/4+(Math.random()*16-8)); ctx.stroke(); } ctx.shadowBlur=0; ctx.restore(); }
+  else if(type==='ice'){ ctx.save(); ctx.shadowColor=color; ctx.shadowBlur=10; ctx.fillStyle=color; for(let i=0;i<3;i++){ const p=((t+i*0.15)%0.6)/0.6, X=20+p*190, Y=55+i*28; ctx.save(); ctx.translate(X,Y); ctx.rotate(0.4); ctx.beginPath(); ctx.moveTo(-11,0); ctx.lineTo(0,-6); ctx.lineTo(11,0); ctx.lineTo(0,6); ctx.closePath(); ctx.fill(); ctx.restore(); } ctx.shadowBlur=0; ctx.restore(); }
+  else if(type==='swordwave'){ for(let i=0;i<3;i++){ const p=((t+i*0.09)%0.5)/0.5; ctx.save(); ctx.translate(cx-30,cy); ctx.rotate(0.5-i*0.5); ctx.globalAlpha=Math.max(0,1-p); ctx.strokeStyle=color; ctx.lineWidth=5; ctx.shadowColor=color; ctx.shadowBlur=12; ctx.beginPath(); ctx.arc(p*90,0,42,-0.7,0.7); ctx.stroke(); ctx.restore(); } ctx.globalAlpha=1; ctx.shadowBlur=0; }
+  else if(type==='darkimpact'){ const p=(t%0.6)/0.6, R=72*p; ctx.save(); ctx.globalAlpha=Math.max(0,1-p); const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R); g.addColorStop(0,'rgba(40,0,80,0.9)'); g.addColorStop(0.5,color); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=3; for(let i=0;i<5;i++){const a=i*1.256+t; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R); ctx.stroke();} ctx.globalAlpha=1; ctx.restore(); }
+  else if(type==='holynova'){ for(let i=0;i<3;i++){ const p=((t+i*0.13)%0.7)/0.7, R=18+p*62; ctx.save(); ctx.globalAlpha=Math.max(0,1-p); ctx.strokeStyle=color; ctx.lineWidth=3; ctx.shadowColor=color; ctx.shadowBlur=12; ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.stroke(); ctx.restore(); } ctx.fillStyle=color; for(let i=0;i<8;i++){const a=t*1.5+i*0.785, rr=42+18*Math.sin(t*3); ctx.globalAlpha=0.8; ctx.beginPath(); ctx.arc(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr,2.2,0,7); ctx.fill();} ctx.globalAlpha=1; ctx.shadowBlur=0; }
+  else if(type==='hurricane'){ ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=2; for(let i=0;i<12;i++){ const p=((t*1.6+i*0.09)%1), X=8+p*224, Y=35+(i%5)*24; ctx.globalAlpha=Math.max(0,1-p*0.6); ctx.beginPath(); ctx.moveTo(X,Y); ctx.lineTo(X-18,Y); ctx.stroke(); } ctx.globalAlpha=1; ctx.restore(); }
+  else if(type==='shuriken'){ ctx.save(); ctx.fillStyle=color; ctx.shadowColor=color; ctx.shadowBlur=8; for(let i=0;i<5;i++){ const p=((t+i*0.12)%0.5)/0.5, X=30+p*180, Y=45+i*22; ctx.save(); ctx.translate(X,Y); ctx.rotate(t*20); ctx.beginPath(); for(let k=0;k<4;k++){const a=k*Math.PI/2; ctx.lineTo(Math.cos(a)*7,Math.sin(a)*7); ctx.lineTo(Math.cos(a+0.4)*3,Math.sin(a+0.4)*3);} ctx.closePath(); ctx.fill(); ctx.restore(); } ctx.shadowBlur=0; ctx.restore(); }
+}
+let T=0;
+function loop(){ T+=1/60; demos.forEach(d=>drawFX(d.ctx,d.type,d.color,T)); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
