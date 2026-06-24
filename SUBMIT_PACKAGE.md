@@ -1,65 +1,56 @@
-# 📤 MAPLE TACTICS — 제출용 패키지 (복붙용)
+# 📤 MAPLE TACTICS — Submission Package (copy-paste, English)
 
-> Verse8 게임 Description / 구글폼에 그대로 붙여넣는 자료. 반려 방지 요소(확률표·면책) 포함.
+> Paste into Verse8 game Description / Google form. Includes reject-prevention items (probability table + disclaimer).
 
-## 1) 제목
+## 1) Game Title (≤50)
 ```
-Maple Tactics — 메이플 택틱스 (오토배틀러)
-```
-
-## 2) 한 줄 소개
-```
-메이플 직업을 1~5차 전직 등급으로 영입·전직시켜 시너지를 맞추고, 몬스터 웨이브와 보스를 사냥하는 TFT식 자동전투 전략 게임.
+Maple Tactics — Job Auto Battler
 ```
 
-## 3) 게임 설명 (Description)
+## 2) Short Description (≤100)
 ```
-■ 게임 소개
-메이플스토리 직업 캐릭터로 팀을 꾸리는 TFT 스타일 오토배틀러입니다.
-직업은 1차~5차 전직(코스트 1~5)으로 나뉘며, 같은 직업 3개를 모으면 자동 전직(별 승급)됩니다.
-계열(전사/마법사/궁수/도적/해적) + 역할(수호자/근접/원거리/법사/보조) 시너지를 맞춰 강해지고,
-직업별 궁극기로 몬스터 웨이브·보스(머쉬맘/자쿰/혼테일/발록)를 사냥하세요. 20라운드 생존이 목표!
+Recruit MapleStory jobs, build synergies, and hunt monster waves & bosses in a TFT auto battler.
+```
 
-■ 플레이 방법
-· 상점 카드 클릭 = 직업 영입(벤치로)
-· 유닛 클릭 = 보드↔벤치 이동 / 드래그 = 정밀 배치 / 우클릭 = 판매
-· 같은 직업 3개 = 자동 전직(별2 → 별3, 능력치 대폭 상승)
-· 조각 2개를 합쳐 장비 아이템 제작 → 캐릭터에 장착(최대 3)
-· '전투 시작' → 자동 전투. 마나가 차면 궁극기 자동 발동
-· 전투 속도 ×1/×2/×3 선택 가능
+## 3) Description (≤1000)
+```
+A TFT-style auto battler where you build a team of MapleStory job characters. Jobs span 1st–5th advancement (cost 1–5); collect 3 of a kind to auto-advance (star up). Match Class + Role synergies and use each job's ultimate to clear monster waves and bosses (Mushmom/Zakum/Horntail/Balrog). Survive 20 rounds!
 
-■ 확률형 요소 안내 (확률표)
-[상점 직업 등장 확률] (레벨별, 코스트 1/2/3/4/5 %)
+■ How to Play
+· Click a shop card = recruit (to bench)
+· Click unit = move board↔bench / Drag = place precisely / Right-click = sell
+· 3 same jobs = auto-advance (★2 → ★3, big stat boost)
+· Combine 2 components into gear → equip on a unit (max 3)
+· "Start Battle" → auto combat; ultimates fire when mana is full
+· Battle speed ×1/×2/×3
+
+■ Probability Info
+[Shop appearance %] (by level — cost 1/2/3/4/5)
 Lv1 100/0/0/0/0 · Lv2 75/25/0/0/0 · Lv3 55/30/15/0/0 · Lv4 45/30/20/5/0
 Lv5 35/30/25/8/2 · Lv6 25/30/30/13/2 · Lv7 20/25/32/18/5 · Lv8 16/22/30/24/8 · Lv9 12/18/28/28/14
-[아이템 조각 드롭]
-1~3라운드 100% 1개 보장 · 4라운드+ 전투 승리 시 50% 1개 · 보스 승리 시 +1개
-조각 5종(검/갑옷/장갑/보주/망토)은 각 20% 동일 확률. 조각 2개 조합 = 완성 아이템(조합표 고정).
+[Component drop]
+Rounds 1–3: 100% (1 piece). Round 4+: 50% on win. Boss win: +1.
+5 components (Sword/Armor/Glove/Orb/Cape) each 20%. Combine 2 = full item (fixed recipes).
 
-■ 안내
-본 게임은 MapleStory Vibe Camp 참가용 팬 제작물이며, Nexon 및 MapleStory Universe(MSU)의 공식 게임이 아닙니다.
-게임 내 화폐 '골드'는 MESO/NESO와 무관합니다.
+■ Notice
+A fan-made entry for MapleStory Vibe Camp; not an official game of Nexon or MapleStory Universe (MSU). In-game currency "Gold" is unrelated to MESO/NESO.
 ```
 
-## 4) 태그 (공식 표기 금지어 피함)
+## 4) Tags (≤5)
 ```
-오토배틀러, 전략, TFT, 자동전투, 캐주얼, 디펜스
+TFT, Tactical, Auto Battler, Strategy, Combat
 ```
-※ "Nexon / MSU / MaplestoryU / MaplestoryN" 같은 공식인 척 표기 금지. "메이플/Maple"은 에셋 사용 맥락이라 OK이되, 위 면책 문구 필수.
+※ Avoid implying official affiliation (Nexon/MSU/MaplestoryU/MaplestoryN). Keep the disclaimer above.
 
-## 5) 썸네일 (제가 이미지 생성은 못 하니 가이드)
-추천 구도: 보드에 5코 캐릭터(보스 투구) + 궁극기 이펙트(메테오/체인라이트닝) 터지는 장면을 캡처 → 제목 "MAPLE TACTICS" 크게 올리기.
-- gallery.html 에서 5코 캐릭터 + 스킬 이펙트 데모를 캡처해 합쳐도 좋음.
+## 5) Release Notes (Build v1)
+- Title: `Maple Tactics v1 — first release`
+- Type: New
+- Description: First public build. 21 jobs across 1st–5th advancement, Class+Role synergies, star-up combine, per-job ultimate effects, item crafting, monster waves & bosses, ×1/×2/×3 speed. English default with Korean toggle. Balance/content updates to follow.
 
-## 6) 구글폼 예상 답변 (실제 폼 항목 주시면 맞춰드림)
-- 게임명: Maple Tactics
-- 장르: 오토배틀러 / 전략
-- 한 줄 설명: (위 2번)
-- 플레이 URL: Verse8 퍼블리시 후 생성되는 주소
-- 사용 에셋: MSU 공식 메이플 캐릭터/몬스터 스프라이트 (MSU Space 내)
-- 확률형 요소 여부: 예 (상점 등장확률·조각 드롭, 확률표 게임 내 기재)
+## 6) Thumbnail (16:9)
+Use image-gen prompt #1 (key art): 5-cost boss-helmet hero + meteor/chain-lightning effects on a hex board, bold "MAPLE TACTICS" title.
 
 ---
-[체크리스트]
-□ 화폐 '골드'만 (MESO 금지)  □ 확률표 Description 기재  □ 면책 문구 기재
-□ 공식인 척 표기(Nexon/MSU/MaplestoryU/N) 없음  □ 썸네일/제목  □ 퍼블리시 후 구글폼 제출
+[Checklist]
+□ "Gold" only (no MESO)  □ Probability table in Description  □ Disclaimer present
+□ No official-implying labels (Nexon/MSU/MaplestoryU/N)  □ Thumbnail/title  □ Submit Google form after publish
