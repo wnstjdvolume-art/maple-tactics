@@ -64,6 +64,12 @@ git clone 한 maple-tactics/MapleTactics.html 이 내가 원하는 완성 게임
 - 몬스터: `https://maplestory.io/api/GMS/255/mob/{mobId}/render/stand`
 - Verse8 공식 전환 시: 위 itemId/mobId 를 **Maple MCP로 조회**해 공식 텍스처로 교체.
 
+## 7-B. ★검수 반영 사항 (재제출 필수)
+검수자 피드백 3가지가 `MapleTactics.html`에 이미 반영됨 — Agent8은 그대로 따라야 한다.
+1. **영어 기본 + 한국어 선택**: 기본 언어 English, 우상단 `langBtn`(🌐)으로 한국어 토글. 구현 = `EN`/`KO` 문자열 테이블 + `t(key)` + `setLang(l)`(데이터 `.name`/`.desc`를 언어별로 교체 + 정적 UI를 id로 세팅). 시작 시 `setLang('en')`. **표시 코드는 안 건드리고 .name만 스왑**하는 방식. 유닛/몬스터/시너지 이름·도움말·버튼·오버레이 전부 번역됨.
+2. **HUD 정렬**: `#topbar`에 `flex-wrap:wrap; row-gap` + `.stat{white-space:nowrap}` + `#phase{white-space:nowrap}` 로 깨짐 방지. (Agent8 버전에서 어긋나던 요소들 정리)
+3. **캐릭터는 항상 옷 착용**: 1·2코도 `OVERALL2`에 기본 의상 itemId 지정(맨몸 금지). 1코=기본의상, 2코=조금 더 갖춤, 3~5코=계열 갑옷.
+
 ## 8. 반려 방지 (필수)
 - 화폐 "골드"만, **MESO 금지**. 확률형 요소(상점 등장확률·조각 드롭) 확률표를 게임 내/설명에 기재. 인게임/설명/태그에 "Nexon/MSU/MaplestoryU/MaplestoryN" 등 공식인 척 표기 금지.
 

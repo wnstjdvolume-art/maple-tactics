@@ -15,7 +15,9 @@
   #app{display:flex;flex-direction:column;height:100vh;width:100vw}
 
   /* Top bar */
-  #topbar{display:flex;align-items:center;gap:14px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);font-size:14px;flex:0 0 auto}
+  #topbar{display:flex;align-items:center;gap:10px;row-gap:6px;flex-wrap:wrap;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);font-size:14px;flex:0 0 auto}
+  #topbar .stat{white-space:nowrap}
+  #phase{margin-left:auto;font-weight:700;white-space:nowrap}
   .stat{display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--panel2);border-radius:8px}
   .stat b{font-size:15px}
   #title{font-weight:800;font-size:18px;letter-spacing:.5px;color:var(--gold)}
@@ -106,7 +108,7 @@
 <body>
 <div id="app">
   <div id="topbar">
-    <div id="title">⚔️ MAPLE TACTICS <small>v1.0 · 조각장착·궁극기</small></div>
+    <div id="title">⚔️ MAPLE TACTICS <small id="titleSub">v1.0 · 조각장착·궁극기</small></div>
     <div class="stat">❤️ <div class="hpbar"><i id="hpFill"></i></div> <b id="hpTxt">100</b></div>
     <div class="stat">💰 <b id="gold">0</b></div>
     <div class="stat">⭐ Lv <b id="level">1</b> <span id="xp" style="color:var(--muted);font-size:11px"></span></div>
@@ -119,6 +121,7 @@
       <button class="btn spd" data-spd="3" style="padding:4px 8px">×3</button>
     </div>
          <button class="btn" id="viewAllBtn" style="margin-left:6px;padding:4px 9px;cursor:pointer" onclick="showAllSprites()">📋</button>
+     <button class="btn" id="langBtn" style="margin-left:6px;padding:4px 9px" title="Language">한국어</button>
      <button class="btn" id="muteBtn" style="margin-left:6px;padding:4px 9px">🔊</button>
   </div>
 
@@ -141,20 +144,20 @@
         <div class="card" data-shop="4"></div>
         <div class="shopbtns">
           <button class="btn primary" id="fightBtn">전투 시작 ▶</button>
-          <div class="help" style="width:90px">유닛을 위 보드로<br>드래그해 배치</div>
+          <div class="help" id="placeHint" style="width:90px">유닛을 위 보드로<br>드래그해 배치</div>
         </div>
       </div>
     </div>
     <div id="right">
-      <h3>🔗 시너지</h3>
+      <h3><span id="hSynergy">🔗 시너지</span></h3>
       <div id="traits"></div>
-      <h3 style="margin-top:14px">🧩 조각 <span id="compHint" style="font-size:10px;color:var(--muted)"></span>
+      <h3 style="margin-top:14px"><span id="hComp">🧩 조각</span> <span id="compHint" style="font-size:10px;color:var(--muted)"></span>
         <button id="recipeBtn" class="btn" style="float:right;padding:2px 7px;font-size:11px">📖 조합표</button></h3>
       <div id="compBar"></div>
-      <h3 style="margin-top:12px">🎒 아이템 <span id="itemHint" style="font-size:10px;color:var(--muted)"></span></h3>
+      <h3 style="margin-top:12px"><span id="hItem">🎒 아이템</span> <span id="itemHint" style="font-size:10px;color:var(--muted)"></span></h3>
       <div id="itemBar"></div>
-      <h3 style="margin-top:14px">📋 도움말</h3>
-      <div class="help" style="text-align:left;line-height:1.6">
+      <h3 style="margin-top:14px"><span id="hHelp">📋 도움말</span></h3>
+      <div class="help" id="helpBox" style="text-align:left;line-height:1.6">
         • 상점 카드 클릭 = 직업 영입(벤치로)<br>
         • 유닛 <b>클릭</b> = 보드↔벤치 올리기/내리기<br>
         • 유닛 <b>드래그</b> = 원하는 칸에 정밀 배치<br>
@@ -170,7 +173,7 @@
 </div>
 
 <div id="overlay"><div class="box"><h1 id="ovTitle"></h1><div id="ovBody" style="color:var(--muted)"></div><button class="btn primary" id="ovBtn" style="margin-top:16px">계속</button></div></div>
-<div id="recipeOverlay"><div class="box" style="max-width:520px"><h1 style="font-size:18px">📖 아이템 조합표</h1><div id="recipeGrid"></div><div class="help" style="margin-top:8px">조각 2개를 합치면 해당 아이템이 만들어집니다. (행 × 열)</div><button class="btn primary" id="recipeClose" style="margin-top:14px">닫기</button></div></div>
+<div id="recipeOverlay"><div class="box" style="max-width:520px"><h1 id="recipeTitle" style="font-size:18px">📖 아이템 조합표</h1><div id="recipeGrid"></div><div class="help" id="recipeDescTxt" style="margin-top:8px">조각 2개를 합치면 해당 아이템이 만들어집니다. (행 × 열)</div><button class="btn primary" id="recipeClose" style="margin-top:14px">닫기</button></div></div>
 
 <script>
 
@@ -428,7 +431,7 @@ function buy(idx){
   if(G.gold<u.cost){ flash('골드 부족'); return; }
   // 벤치 공간 확인(승급 가능하면 예외)
   const benchFull = G.bench.filter(Boolean).length>=9;
-  if(benchFull && !wouldCombine(key)){ flash('벤치 가득참'); return; }
+  if(benchFull && !wouldCombine(key)){ flash(t('benchFull')); return; }
   G.gold-=u.cost; G.pool[key]--;
   G.shop[idx]=null;
   addUnit(key,1);
@@ -486,8 +489,8 @@ function combineCheck(key,star){
       let s=-1; for(let i=0;i<9;i++){ if(!G.bench[i]){s=i;break;} }
       if(s<0)G.bench.push(up); else G.bench[s]=up;
     }
-    flash('⭐ '+UNITS[key].name+' '+(star+1)+'성 승급!','var(--gold)');
-    if(carried.length>3) flash('가방으로 반환된 아이템 '+(carried.length-3)+'개','#9ad0ff');
+    flash(t('upgrade')(UNITS[key].name, star+1),'var(--gold)');
+    if(carried.length>3) flash(t('returned')(carried.length-3),'#9ad0ff');
     combineCheck(key,star+1);
   }
 }
@@ -655,7 +658,7 @@ function renderRecipeTable(){
 function equipItem(u){
   if(selItem==null||!u){ selItem=null; renderItems(); return; }
   u.items=u.items||[];
-  if(u.items.length>=3){ flash('아이템은 최대 3개'); return; }
+  if(u.items.length>=3){ flash(t('maxItem')); return; }
   u.items.push(G.items[selItem]);
   G.items.splice(selItem,1);
   selItem=null;
@@ -799,7 +802,7 @@ function startFight(){
   if(boardCount()===0){ flash('보드에 유닛을 배치하세요'); return; }
   G.phase='combat';
   $('#fightBtn').disabled=true; $('#rerollBtn').disabled=true; $('#xpBtn').disabled=true;
-  $('#phase').innerHTML='⚔️ 전투 중...';
+  $('#phase').innerHTML=t('fighting');
   sfx('fight'); hitStop=0; shakeAmt=0; flashA=0; cutIn=null; cutCd=0; slowmo=0; ultBanner=null;
   // 전투 유닛 생성
   const allies = G.board.filter(Boolean).map(u=>makeCombatant(u,true));
@@ -1388,28 +1391,28 @@ function showResult(win,draw,dmg){
   G.round++;
   G.phase='plan';
   $('#fightBtn').disabled=false; $('#rerollBtn').disabled=false; $('#xpBtn').disabled=false;
-  $('#phase').innerHTML='준비 단계';
+  $('#phase').innerHTML=t('prep');
   battle=null;
   rollShop(); renderAll(); startPlanAnim();
   if(win) sfx('win'); else if(!draw) sfx('lose');
-  const res = win?'🎉 승리!':(draw?'🤝 무승부':'💀 패배');
-  const dtxt = win?'적을 전멸시켰습니다.':(draw?'시간 초과.':`체력 -${dmg}`);
-  const itxt = gotItem?'<br>🧩 조각 획득! (우측에서 2개 조합)':'';
-  overlay(res, `${dtxt}<br>다음 라운드 골드 +${income}${itxt}`, ()=>{}, 1400);
+  const res = win?t('win'):(draw?t('draw'):t('lose'));
+  const dtxt = win?t('rWin'):(draw?t('rDraw'):t('rLose')(dmg));
+  const itxt = gotItem?t('gotComp'):'';
+  overlay(res, `${dtxt}<br>${t('nextGold')} +${income}${itxt}`, ()=>{}, 1400);
   if(G.round>20){ gameOver(true); }
 }
 function gameOver(won){
   G.phase='over';
-  overlay(won?'👑 클리어!':'☠️ 게임 오버',
-    won?`20라운드를 모두 버텨냈습니다!<br>최종 라운드: ${G.round}`:`${G.round}라운드에서 패배.<br>다시 도전해보세요!`,
-    ()=>{ resetGame(); }, 0, '다시 시작');
+  overlay(won?t('clear'):t('gameover'),
+    won?t('clearBody')(G.round):t('goBody')(G.round),
+    ()=>{ resetGame(); }, 0, t('restart'));
 }
 
 // ---------- 오버레이/이펙트 ----------
 let ovCb=null;
 function overlay(title,body,cb,auto,btn){
   $('#ovTitle').textContent=title; $('#ovBody').innerHTML=body;
-  $('#ovBtn').textContent=btn||'계속';
+  $('#ovBtn').textContent=btn||t('cont');
   $('#overlay').style.display='flex'; ovCb=cb;
   if(auto){ setTimeout(()=>{ if($('#overlay').style.display==='flex'){ $('#overlay').style.display='none'; cb&&cb(); } },auto); }
 }
@@ -1493,10 +1496,10 @@ function equipComponent(u, compKey){
   const looseIdx=u.items.findIndex(it=>COMPONENTS[it]);   // 캐릭터에 붙은 미완성 조각
   if(looseIdx>=0){
     const full=RECIPES[[u.items[looseIdx],compKey].sort().join('+')];
-    if(full){ u.items[looseIdx]=full; flash('🔧 '+ITEMS[full].name+' 완성!','var(--gold)'); return true; }
+    if(full){ u.items[looseIdx]=full; flash(t('crafted')(ITEMS[full].name),'var(--gold)'); return true; }
   }
-  if(u.items.length>=3){ flash('슬롯 가득(최대 3)'); return false; }
-  u.items.push(compKey); flash('🧩 조각 장착'); return true;
+  if(u.items.length>=3){ flash(t('slotFull')); return false; }
+  u.items.push(compKey); flash(t('equipComp')); return true;
 }
 function dropUnit(u,e){
   const el=document.elementFromPoint(e.clientX,e.clientY);
@@ -1601,8 +1604,8 @@ function resetGame(){
   G.bench=new Array(9).fill(null);
   rollShop(); renderAll(); startPlanAnim();
   $('#fightBtn').disabled=false;$('#rerollBtn').disabled=false;$('#xpBtn').disabled=false;
-  $('#phase').innerHTML='준비 단계';
-  overlay('⚔️ MAPLE TACTICS','메이플 <b>직업 캐릭터</b>로 팀을 꾸려 몬스터 웨이브를 사냥하세요!<br><br>• 상점에서 직업 영입(1~5차전직 = 코스트1~5)<br>• 유닛 <b>클릭</b>=올리기/내리기, <b>드래그</b>=정밀 배치<br>• 같은 직업 3개 = ⭐ 승급<br>• 계열(전사/마법사/궁수/도적/해적) + 역할 시너지<br>• 🎒 아이템 클릭 → 캐릭터 클릭 = 장착(최대3)<br>• 5·10·15·20라운드 = 보스전(머쉬맘→자쿰→혼테일→발록)<br><br>20라운드 생존이 목표!',()=>{},0,'시작하기');
+  $('#phase').innerHTML=t('prep');
+  overlay('⚔️ MAPLE TACTICS', t('intro'), ()=>{}, 0, t('start'));
 }
 function showAllSprites(){
   var d=document.createElement("div");d.id="sv";d.style.cssText="position:fixed;inset:0;background:#000e;display:flex;align-items:center;justify-content:center;z-index:70";
@@ -1614,9 +1617,9 @@ function showAllSprites(){
 }
 /* ===== 라이브 스프라이트(무기/옷 즉시 변경) — 이 숫자만 바꾸면 외형이 바뀜 ===== */
 const HAIR={warrior:30030,mage:33000,archer:30150,thief:30240,pirate:30060};   // 계열별 헤어
-const OVERALL2={  // 옷: 1·2코=없음(맨몸/투구), 3·4·5코=계열 갑옷(점점 고급). 전사=체인메일(전투적)
-  warrior:{3:1050021,4:1050062,5:1050098}, mage:{3:1050053,4:1050061,5:1050097},
-  archer:{3:1050055,4:1050063}, thief:{3:1050056,4:1050064}, pirate:{3:1050055,4:1050062,5:1050096}};
+const OVERALL2={  // 옷: 1·2코=기본의상(항상 착용), 3·4·5코=계열 갑옷(점점 고급). ★맨몸 금지(검수 반영)
+  warrior:{1:1050184,2:1050447,3:1050021,4:1050062,5:1050098}, mage:{1:1050752,2:1050733,3:1050053,4:1050061,5:1050097},
+  archer:{1:1050495,2:1050674,3:1050055,4:1050063}, thief:{1:1050447,2:1050247,3:1050056,4:1050064}, pirate:{1:1050152,2:1051180,3:1050055,4:1050062,5:1050096}};
 const HAT={warrior:1002005,mage:1003308,archer:1003135,thief:1002759,pirate:1002553}; // 전사=철투구(터프), 그 외=얼굴노출 직업모자. 2코부터
 const CAPE={4:1102041,5:1102041};                                              // 4·5코 망토
 const MOUNT={};                                                                // 탈것 폐기
@@ -1641,8 +1644,38 @@ spriteBase64=function(key){
 };
 spriteSet=function(key){if(SPRITESET[key])return SPRITESET[key];var url=spriteBase64(key);if(url){var r={img:new Image(),ok:false};r.img.onload=function(){r.ok=true;};r.img.onerror=function(){r.ok=false;};r.img.src=url;SPRITESET[key]={idle:r,atk:[],hit:null};return SPRITESET[key];}var set={idle:null,atk:[],hit:null};SPRITESET[key]=set;return set;};
 // C키: 5코 스타일 토글 (캐시 크라운 ↔ 보스 투구)
-window.addEventListener('keydown',function(e){ if(e.key==='c'||e.key==='C'){ FIVE_STYLE=(FIVE_STYLE==='cash'?'zakum':'cash'); for(var k in SPRITESET) delete SPRITESET[k]; if(typeof flash==='function')flash('5코 스타일: '+(FIVE_STYLE==='cash'?'캐시 크라운':'보스 투구')); if(typeof renderAll==='function')renderAll(); }});
-initPool(); resetGame();
+window.addEventListener('keydown',function(e){ if(e.key==='c'||e.key==='C'){ FIVE_STYLE=(FIVE_STYLE==='cash'?'zakum':'cash'); for(var k in SPRITESET) delete SPRITESET[k]; if(typeof flash==='function')flash(t('fiveStyle')(FIVE_STYLE==='cash'?t('cash'):t('boss'))); if(typeof renderAll==='function')renderAll(); }});
+
+// ================= i18n (기본 영어, 한국어 선택) =================
+const EN={
+  units:{swordman:'Swordman',magician:'Magician',archer1:'Archer',rogue:'Rogue',pirate1:'Pirate',page:'Page',wizard:'Thunder Wizard',hunter:'Hunter',assassin:'Assassin',brawler:'Brawler',knight:'Knight',priest:'Priest',ranger:'Ranger',hermit:'Hermit',hero:'Hero',bishop:'Bishop',bowmaster:'Bowmaster',nightlord:'Night Lord',darkknight:'Dark Knight',archmage:'Arch Mage',viper:'Viper'},
+  mons:{snail:'Snail',omush:'Orange Mushroom',pig:'Ribbon Pig',boar:'Wild Boar',stump:'Stump',bmush:'Blue Mushroom',necki:'Jr. Necki',eye:'Curse Eye',zombie:'Zombie Mushroom',yeti:'Yeti',drake:'Drake',griffey:'Griffey',mushmom:'Mushmom',zakum:'Zakum',horntail:'Horntail',balrog:'Balrog'},
+  traits:{warrior:['Warrior','Bonus HP (Tank)'],mage:['Mage','Magic ATK'],archer:['Archer','Attack Speed'],thief:['Thief','Critical Hit'],pirate:['Pirate','HP & ATK'],guardian:['Guardian','Bonus HP'],striker:['Striker','Melee ATK'],marksman:['Marksman','Bonus ATK'],caster:['Caster','Magic Burst'],support:['Support','Combat-start Heal']},
+  ui:{sub:'v1.0 · Items · Ultimates',prep:'Preparation',fighting:'⚔️ In Battle...',win:'🎉 Victory!',draw:'🤝 Draw',lose:'💀 Defeat',xp:'Buy XP',xpSub:'4 Gold → +4xp',reroll:'Refresh 🔄',rerollSub:'2 Gold',fight:'Start Battle ▶',placeHint:'Drag units<br>onto the board',synergy:'🔗 Synergies',comp:'🧩 Components',recipe:'📖 Recipes',item:'🎒 Items',help:'📋 Help',cont:'Continue',restart:'Restart',start:'Start',recipeTitle:'📖 Item Recipes',recipeDesc:'Combine 2 components to craft the item. (row × col)',close:'Close',nextGold:'Next-round gold',rWin:'Enemies wiped out.',rDraw:'Time out.',rLose:(d)=>`HP -${d}`,gotComp:'<br>🧩 Component obtained! (combine 2 on the right)',clear:'👑 Clear!',gameover:'☠️ Game Over',clearBody:(r)=>`You survived all 20 rounds!<br>Final round: ${r}`,goBody:(r)=>`Defeated at round ${r}.<br>Try again!`,upgrade:(n,s)=>`⭐ ${n} → ${s}★!`,benchFull:'Bench full',maxItem:'Max 3 items',slotFull:'Slots full (max 3)',returned:(n)=>`${n} item(s) returned to bag`,equipComp:'🧩 Component equipped',crafted:(n)=>`🔧 ${n} crafted!`,fiveStyle:(s)=>`5-cost style: ${s}`,cash:'Cash Crown',boss:'Boss Helmet',langBtn:'한국어',intro:'Build a team of <b>MapleStory job characters</b> and hunt monster waves!<br><br>• Recruit jobs in the shop (1st~5th advancement = cost 1~5)<br>• <b>Click</b>=move, <b>Drag</b>=place precisely<br>• 3 of same job = ⭐ upgrade<br>• Class (Warrior/Mage/Archer/Thief/Pirate) + Role synergies<br>• 🎒 Click item → click unit = equip (max 3)<br>• R5·10·15·20 = boss (Mushmom→Zakum→Horntail→Balrog)<br><br>Survive 20 rounds!',helpHtml:'• Click shop card = recruit (to bench)<br>• <b>Click</b> unit = move board↔bench<br>• <b>Drag</b> unit = place precisely<br>• 3 of same job = ⭐2 auto-upgrade<br>• Click item → click unit = equip (max 3)<br>• Right-click unit = sell<br>• Enemies = monster waves / R5·10·15·20 = boss<br>• Gold interest: +1 per 10 gold (max +5)<br>• Win/loss streak bonus gold'}
+};
+const KO={ui:{sub:'v1.0 · 조각장착·궁극기',prep:'준비 단계',fighting:'⚔️ 전투 중...',win:'🎉 승리!',draw:'🤝 무승부',lose:'💀 패배',xp:'XP 구매',xpSub:'4골드 → +4xp',reroll:'새로고침 🔄',rerollSub:'2골드',fight:'전투 시작 ▶',placeHint:'유닛을 위 보드로<br>드래그해 배치',synergy:'🔗 시너지',comp:'🧩 조각',recipe:'📖 조합표',item:'🎒 아이템',help:'📋 도움말',cont:'계속',restart:'다시 시작',start:'시작하기',recipeTitle:'📖 아이템 조합표',recipeDesc:'조각 2개를 합치면 해당 아이템이 만들어집니다. (행 × 열)',close:'닫기',nextGold:'다음 라운드 골드',rWin:'적을 전멸시켰습니다.',rDraw:'시간 초과.',rLose:(d)=>`체력 -${d}`,gotComp:'<br>🧩 조각 획득! (우측에서 2개 조합)',clear:'👑 클리어!',gameover:'☠️ 게임 오버',clearBody:(r)=>`20라운드를 모두 버텨냈습니다!<br>최종 라운드: ${r}`,goBody:(r)=>`${r}라운드에서 패배.<br>다시 도전해보세요!`,upgrade:(n,s)=>`⭐ ${n} ${s}성 승급!`,benchFull:'벤치 가득참',maxItem:'아이템은 최대 3개',slotFull:'슬롯 가득(최대 3)',returned:(n)=>`가방으로 반환된 아이템 ${n}개`,equipComp:'🧩 조각 장착',crafted:(n)=>`🔧 ${n} 완성!`,fiveStyle:(s)=>`5코 스타일: ${s}`,cash:'캐시 크라운',boss:'보스 투구',langBtn:'English',intro:'메이플 <b>직업 캐릭터</b>로 팀을 꾸려 몬스터 웨이브를 사냥하세요!<br><br>• 상점에서 직업 영입(1~5차전직 = 코스트1~5)<br>• 유닛 <b>클릭</b>=올리기/내리기, <b>드래그</b>=정밀 배치<br>• 같은 직업 3개 = ⭐ 승급<br>• 계열(전사/마법사/궁수/도적/해적) + 역할 시너지<br>• 🎒 아이템 클릭 → 캐릭터 클릭 = 장착(최대3)<br>• 5·10·15·20라운드 = 보스전(머쉬맘→자쿰→혼테일→발록)<br><br>20라운드 생존이 목표!',helpHtml:'• 상점 카드 클릭 = 직업 영입(벤치로)<br>• 유닛 <b>클릭</b> = 보드↔벤치 올리기/내리기<br>• 유닛 <b>드래그</b> = 원하는 칸에 정밀 배치<br>• 같은 직업 3개 = ⭐2 자동전직(승급)<br>• 아이템 클릭 → 캐릭터 클릭 = 장착(최대3)<br>• 유닛 우클릭 = 판매<br>• 적 = 몬스터 웨이브 / 5·10·15·20R = 보스<br>• 골드 이자: 10골드당 +1 (최대 +5)<br>• 연승/연패 보너스 골드'}};
+var LANG='en';
+function t(k){ return (LANG==='en'?EN.ui:KO.ui)[k]; }
+// 한국어 원본 보존(최초 1회)
+[UNITS,MONSTERS,BOSS_LIST].forEach(function(M){for(var k in M) M[k].nameKo=M[k].name;});
+for(var _k in TRAITS){ TRAITS[_k].nameKo=TRAITS[_k].name; TRAITS[_k].descKo=TRAITS[_k].desc; }
+function setLang(l){
+  LANG=l; var en=(l==='en');
+  for(var k in UNITS) UNITS[k].name = en?(EN.units[k]||UNITS[k].nameKo):UNITS[k].nameKo;
+  for(var k in MONSTERS) MONSTERS[k].name = en?(EN.mons[k]||MONSTERS[k].nameKo):MONSTERS[k].nameKo;
+  for(var k in BOSS_LIST) BOSS_LIST[k].name = en?(EN.mons[k]||BOSS_LIST[k].nameKo):BOSS_LIST[k].nameKo;
+  for(var k in TRAITS){ var e=EN.traits[k]; TRAITS[k].name=en&&e?e[0]:TRAITS[k].nameKo; TRAITS[k].desc=en&&e?e[1]:TRAITS[k].descKo; }
+  var T=function(id,v){var x=document.getElementById(id); if(x)x.textContent=v;};
+  var H=function(id,v){var x=document.getElementById(id); if(x)x.innerHTML=v;};
+  H('titleSub',t('sub')); H('xpBtn',t('xp')+'<br><small>'+t('xpSub')+'</small>'); H('rerollBtn',t('reroll')+'<br><small>'+t('rerollSub')+'</small>');
+  T('fightBtn',t('fight')); H('placeHint',t('placeHint')); T('hSynergy',t('synergy')); T('hComp',t('comp')); T('recipeBtn',t('recipe'));
+  T('hItem',t('item')); T('hHelp',t('help')); H('helpBox',t('helpHtml')); T('recipeTitle',t('recipeTitle')); T('recipeDescTxt',t('recipeDesc'));
+  T('recipeClose',t('close')); T('langBtn',t('langBtn'));
+  if(typeof G!=='undefined' && G.phase){ var ph=document.getElementById('phase'); if(ph) ph.innerHTML=(G.phase==='battle'?t('fighting'):t('prep')); }
+  if(typeof renderAll==='function') renderAll();
+}
+var _lb=document.getElementById('langBtn'); if(_lb) _lb.onclick=function(){ setLang(LANG==='en'?'ko':'en'); };
+initPool(); resetGame(); setLang('en');
 </script>
 </body>
 </html>
