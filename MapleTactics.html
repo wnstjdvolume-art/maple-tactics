@@ -1035,7 +1035,7 @@ function castUlt(c){
   battle.fx.push({type:'shockwave',x:_gx,y:_gy,t:0,color,max:96});
   battle.fx.push({type:'burst',x:cx,y:cy,t:0,color,max:58});
   try{ spawnUltVfx(c, foes); }catch(e){ /* 이펙트 실패해도 전투 계속 */ }   // 화려한 시그니처 이펙트
-  if((c.cost||0)>=4 && cutCd<=0){ cutIn={key:c.key,name:u.name,color:attackColor(c),t:0}; cutCd=150; slowmo=Math.max(slowmo,62); } // 에이스 컷인
+  if((c.cost||0)>=4 && cutCd<=0){ cutIn={key:c.key,name:_un,color:attackColor(c),t:0}; cutCd=150; slowmo=Math.max(slowmo,62); } // 에이스 컷인(언어별 이름)
   if(u.type==='shield'){
     c.shield=(c.shield||0)+Math.round(c.maxHp*0.30*u.pow);
     battle.fx.push({type:'boom',x:cx,y:cy,t:0,color:'#5ad0ff'});
