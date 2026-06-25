@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maple Tactics — 메이플 택틱스 (프로토타입)</title>
+<title>Maple Tactics — Job Auto Battler</title>
 <style>
   :root{
     --bg:#0e1320; --panel:#161d31; --panel2:#1d2740; --line:#2c3a5e;
@@ -34,7 +34,7 @@
 
   /* Battlefield */
   #fieldWrap{flex:1 1 auto;display:flex;align-items:center;justify-content:center;position:relative;min-height:0}
-  #field{background:radial-gradient(ellipse at center,#1b2740,#0c1120);border-radius:12px;box-shadow:0 8px 40px #0008}
+  #field{background:radial-gradient(ellipse at center,#1b2740,#0c1120);border-radius:12px;box-shadow:0 8px 40px #0008;max-width:100%;height:auto}
   #log{position:absolute;top:8px;left:8px;font-size:12px;color:var(--muted);pointer-events:none;text-shadow:0 1px 2px #000}
 
   /* Bench */
@@ -103,19 +103,58 @@
   @keyframes glowpulse{0%,100%{box-shadow:0 0 0 2px var(--gold),0 0 7px #ffcf4a}50%{box-shadow:0 0 0 2px var(--gold),0 0 17px #ffcf4a}}
   .piece.ready,.card.ready{animation:glowpulse .8s infinite}
   .upbadge{position:absolute;top:-7px;left:-3px;background:var(--gold);color:#222;font-size:8px;font-weight:800;border-radius:6px;padding:1px 3px;z-index:3}
+
+  /* ===== 반응형: PC 좁은 창 잘림 방지 + 모바일 세로 최적화 ===== */
+  /* 중간 폭(노트북/태블릿 가로): 우측 패널 약간 축소, 상점/벤치 줄바꿈 허용 */
+  @media (max-width: 1180px){
+    #right{flex:0 0 200px;padding:8px}
+    #right h3{font-size:13px}
+    #shop{flex-wrap:wrap;overflow-x:auto}
+    #bench{flex-wrap:wrap}
+  }
+  @media (max-width: 980px){
+    #right{flex:0 0 168px}
+    .card{padding:6px}
+    .card .ava{font-size:24px}
+    .card .nm{font-size:12px}
+  }
+  /* 모바일 세로(또는 매우 좁은 화면): 세로 스택 + 스크롤 */
+  @media (max-width: 720px), (orientation: portrait) and (max-width: 920px){
+    body{overflow:auto}
+    #app{height:auto;min-height:100vh}
+    #main{flex-direction:column;min-height:0}
+    #left{min-width:0}
+    #right{flex:0 0 auto;width:100%;border-left:none;border-top:1px solid var(--line);max-height:none;display:flex;flex-wrap:wrap;gap:0 16px}
+    #right h3{width:100%}
+    #right > div{flex:1 1 140px}
+    #fieldWrap{min-height:38vh}
+    #topbar{font-size:12px;gap:6px 8px;padding:6px 10px}
+    #title{font-size:15px}
+    #title small{display:none}
+    .stat{padding:3px 7px}
+    .hpbar{width:80px}
+    #phase{margin-left:auto}
+    #bench{flex-wrap:wrap;gap:5px;padding:6px}
+    .slot{width:48px;height:48px}
+    .piece{width:44px;height:44px}
+    #shop{flex-wrap:wrap;gap:6px;padding:8px}
+    .shopbtns{flex-direction:row;flex:1 1 100%;justify-content:center;gap:8px}
+    .card{flex:1 1 64px;min-width:60px;max-width:120px}
+    #overlay .box{max-width:88vw;padding:22px 20px}
+  }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="topbar">
-    <div id="title">⚔️ MAPLE TACTICS <small id="titleSub">v1.0 · 조각장착·궁극기</small></div>
+    <div id="title">⚔️ MAPLE TACTICS <small id="titleSub">v1.0 · Items · Ultimates</small></div>
     <div class="stat">❤️ <div class="hpbar"><i id="hpFill"></i></div> <b id="hpTxt">100</b></div>
     <div class="stat">💰 <b id="gold">0</b></div>
     <div class="stat">⭐ Lv <b id="level">1</b> <span id="xp" style="color:var(--muted);font-size:11px"></span></div>
     <div class="stat">🏆 R <b id="round">1</b></div>
     <div class="stat" id="streakStat">🔥 <b id="streak">0</b></div>
-    <div id="phase">준비 단계 <span id="timer"></span></div>
-    <div style="display:flex;gap:3px;margin-left:8px" title="전투 속도">
+    <div id="phase">Preparation <span id="timer"></span></div>
+    <div style="display:flex;gap:3px;margin-left:8px" title="Battle speed">
       <button class="btn spd on" data-spd="1" style="padding:4px 8px">×1</button>
       <button class="btn spd" data-spd="2" style="padding:4px 8px">×2</button>
       <button class="btn spd" data-spd="3" style="padding:4px 8px">×3</button>
@@ -134,8 +173,8 @@
       <div id="bench"></div>
       <div id="shop">
         <div class="shopbtns">
-          <button class="btn" id="xpBtn">XP 구매<br><small>4골드 → +4xp</small></button>
-          <button class="btn" id="rerollBtn">새로고침 🔄<br><small>2골드</small></button>
+          <button class="btn" id="xpBtn">Buy XP<br><small>4 Gold → +4xp</small></button>
+          <button class="btn" id="rerollBtn">Refresh 🔄<br><small>2 Gold</small></button>
         </div>
         <div class="card" data-shop="0"></div>
         <div class="card" data-shop="1"></div>
@@ -143,37 +182,37 @@
         <div class="card" data-shop="3"></div>
         <div class="card" data-shop="4"></div>
         <div class="shopbtns">
-          <button class="btn primary" id="fightBtn">전투 시작 ▶</button>
-          <div class="help" id="placeHint" style="width:90px">유닛을 위 보드로<br>드래그해 배치</div>
+          <button class="btn primary" id="fightBtn">Start Battle ▶</button>
+          <div class="help" id="placeHint" style="width:90px">Drag units<br>onto the board</div>
         </div>
       </div>
     </div>
     <div id="right">
-      <h3><span id="hSynergy">🔗 시너지</span></h3>
+      <h3><span id="hSynergy">🔗 Synergies</span></h3>
       <div id="traits"></div>
-      <h3 style="margin-top:14px"><span id="hComp">🧩 조각</span> <span id="compHint" style="font-size:10px;color:var(--muted)"></span>
-        <button id="recipeBtn" class="btn" style="float:right;padding:2px 7px;font-size:11px">📖 조합표</button></h3>
+      <h3 style="margin-top:14px"><span id="hComp">🧩 Components</span> <span id="compHint" style="font-size:10px;color:var(--muted)"></span>
+        <button id="recipeBtn" class="btn" style="float:right;padding:2px 7px;font-size:11px">📖 Recipes</button></h3>
       <div id="compBar"></div>
-      <h3 style="margin-top:12px"><span id="hItem">🎒 아이템</span> <span id="itemHint" style="font-size:10px;color:var(--muted)"></span></h3>
+      <h3 style="margin-top:12px"><span id="hItem">🎒 Items</span> <span id="itemHint" style="font-size:10px;color:var(--muted)"></span></h3>
       <div id="itemBar"></div>
-      <h3 style="margin-top:14px"><span id="hHelp">📋 도움말</span></h3>
+      <h3 style="margin-top:14px"><span id="hHelp">📋 Help</span></h3>
       <div class="help" id="helpBox" style="text-align:left;line-height:1.6">
-        • 상점 카드 클릭 = 직업 영입(벤치로)<br>
-        • 유닛 <b>클릭</b> = 보드↔벤치 올리기/내리기<br>
-        • 유닛 <b>드래그</b> = 원하는 칸에 정밀 배치<br>
-        • 같은 직업 3개 = ⭐2 자동전직(승급)<br>
-        • 아이템 클릭 → 캐릭터 클릭 = 장착(최대3)<br>
-        • 유닛 우클릭 = 판매<br>
-        • 적 = 몬스터 웨이브 / 5·10·15·20R = 보스<br>
-        • 골드 이자: 10골드당 +1 (최대 +5)<br>
-        • 연승/연패 보너스 골드
+        • Click shop card = recruit (to bench)<br>
+        • <b>Click</b> unit = move board↔bench<br>
+        • <b>Drag</b> unit = place precisely<br>
+        • 3 of same job = ⭐2 auto-upgrade<br>
+        • Click item → click unit = equip (max 3)<br>
+        • Right-click unit = sell<br>
+        • Enemies = monster waves / R5·10·15·20 = boss<br>
+        • Gold interest: +1 per 10 gold (max +5)<br>
+        • Win/loss streak bonus gold
       </div>
     </div>
   </div>
 </div>
 
-<div id="overlay"><div class="box"><h1 id="ovTitle"></h1><div id="ovBody" style="color:var(--muted)"></div><button class="btn primary" id="ovBtn" style="margin-top:16px">계속</button></div></div>
-<div id="recipeOverlay"><div class="box" style="max-width:520px"><h1 id="recipeTitle" style="font-size:18px">📖 아이템 조합표</h1><div id="recipeGrid"></div><div class="help" id="recipeDescTxt" style="margin-top:8px">조각 2개를 합치면 해당 아이템이 만들어집니다. (행 × 열)</div><button class="btn primary" id="recipeClose" style="margin-top:14px">닫기</button></div></div>
+<div id="overlay"><div class="box"><h1 id="ovTitle"></h1><div id="ovBody" style="color:var(--muted)"></div><button class="btn primary" id="ovBtn" style="margin-top:16px">Continue</button></div></div>
+<div id="recipeOverlay"><div class="box" style="max-width:520px"><h1 id="recipeTitle" style="font-size:18px">📖 Item Recipes</h1><div id="recipeGrid"></div><div class="help" id="recipeDescTxt" style="margin-top:8px">Combine 2 components to craft the item. (row × col)</div><button class="btn primary" id="recipeClose" style="margin-top:14px">Close</button></div></div>
 
 <script>
 
@@ -286,35 +325,35 @@ function monstersByTier(t){ return Object.keys(MONSTERS).filter(k=>MONSTERS[k].t
 // fx: ad(공격력+), hp(체력+), asPct(공속%), adPct(공격력%), lifesteal(흡혈), dr(피해감소)
 // 기본 조각(컴포넌트) 5종 — 전투 보상으로 드롭, 2개 합쳐 완성 아이템 제작
 const COMPONENTS = {
-  bsword:{name:'검 조각',  icon:'🗡️', fx:{ad:12}},
-  barmor:{name:'갑옷 조각',icon:'🛡️', fx:{hp:120}},
-  bglove:{name:'장갑 조각',icon:'🧤', fx:{asPct:0.08}},
-  borb:  {name:'보주 조각',icon:'🔮', fx:{ad:14}},
-  bcloak:{name:'망토 조각',icon:'🧥', fx:{dr:0.05}},
+  bsword:{name:'검 조각',  nameEn:'Sword Piece', icon:'🗡️', fx:{ad:12}},
+  barmor:{name:'갑옷 조각',nameEn:'Armor Piece', icon:'🛡️', fx:{hp:120}},
+  bglove:{name:'장갑 조각',nameEn:'Glove Piece', icon:'🧤', fx:{asPct:0.08}},
+  borb:  {name:'보주 조각',nameEn:'Orb Piece',   icon:'🔮', fx:{ad:14}},
+  bcloak:{name:'망토 조각',nameEn:'Cape Piece',  icon:'🧥', fx:{dr:0.05}},
 };
 // 완성 아이템 15종 (조각 2개 조합)
 const ITEMS = {
-  reddragon: {name:'적룡도',     icon:'⚔️', recipe:['bsword','bsword'], fx:{ad:35}},
-  aegis:     {name:'이지스 실드', icon:'🛡️', recipe:['barmor','barmor'], fx:{hp:350}},
-  transposer:{name:'트랜스포저',  icon:'💨', recipe:['bglove','bglove'], fx:{asPct:0.25}},
-  essence:   {name:'마력의 정수', icon:'🔮', recipe:['borb','borb'],     fx:{ad:50}},
-  utgard:    {name:'우트가르드',  icon:'🪨', recipe:['bcloak','bcloak'], fx:{dr:0.15}},
-  dominator: {name:'도미네이터',  icon:'💎', recipe:['bsword','barmor'], fx:{ad:15,hp:180}},
-  bloodglove:{name:'흡혈 장갑',   icon:'🩸', recipe:['bsword','bglove'], fx:{ad:10,lifesteal:0.20}},
-  zerosword: {name:'제로의 검',   icon:'🗡️', recipe:['bsword','borb'],   fx:{adPct:0.22}},
-  thornmail: {name:'가시 갑주',   icon:'🌵', recipe:['bsword','bcloak'], fx:{ad:14,dr:0.08}},
-  hastearmor:{name:'질풍 갑옷',   icon:'🌀', recipe:['barmor','bglove'], fx:{hp:160,asPct:0.12}},
-  sagerobe:  {name:'현자의 로브', icon:'📘', recipe:['barmor','borb'],   fx:{hp:160,ad:18}},
-  fortress:  {name:'강철 요새',   icon:'🏰', recipe:['barmor','bcloak'], fx:{hp:220,dr:0.10}},
-  runeglove: {name:'룬 글러브',   icon:'✴️', recipe:['bglove','borb'],   fx:{asPct:0.15,ad:18}},
-  windguard: {name:'바람막이',    icon:'🍃', recipe:['bglove','bcloak'], fx:{asPct:0.15,dr:0.08}},
-  spirit:    {name:'정령의 부적', icon:'🧿', recipe:['borb','bcloak'],   fx:{ad:22,dr:0.08}},
+  reddragon: {name:'적룡도',     nameEn:'Red Dragon Blade', icon:'⚔️', recipe:['bsword','bsword'], fx:{ad:35}},
+  aegis:     {name:'이지스 실드', nameEn:'Aegis Shield',     icon:'🛡️', recipe:['barmor','barmor'], fx:{hp:350}},
+  transposer:{name:'트랜스포저',  nameEn:'Transposer',       icon:'💨', recipe:['bglove','bglove'], fx:{asPct:0.25}},
+  essence:   {name:'마력의 정수', nameEn:'Essence of Power', icon:'🔮', recipe:['borb','borb'],     fx:{ad:50}},
+  utgard:    {name:'우트가르드',  nameEn:'Utgard',           icon:'🪨', recipe:['bcloak','bcloak'], fx:{dr:0.15}},
+  dominator: {name:'도미네이터',  nameEn:'Dominator',        icon:'💎', recipe:['bsword','barmor'], fx:{ad:15,hp:180}},
+  bloodglove:{name:'흡혈 장갑',   nameEn:'Vampiric Gloves',  icon:'🩸', recipe:['bsword','bglove'], fx:{ad:10,lifesteal:0.20}},
+  zerosword: {name:'제로의 검',   nameEn:'Zero Blade',       icon:'🗡️', recipe:['bsword','borb'],   fx:{adPct:0.22}},
+  thornmail: {name:'가시 갑주',   nameEn:'Thornmail',        icon:'🌵', recipe:['bsword','bcloak'], fx:{ad:14,dr:0.08}},
+  hastearmor:{name:'질풍 갑옷',   nameEn:'Haste Armor',      icon:'🌀', recipe:['barmor','bglove'], fx:{hp:160,asPct:0.12}},
+  sagerobe:  {name:'현자의 로브', nameEn:'Sage Robe',        icon:'📘', recipe:['barmor','borb'],   fx:{hp:160,ad:18}},
+  fortress:  {name:'강철 요새',   nameEn:'Steel Fortress',   icon:'🏰', recipe:['barmor','bcloak'], fx:{hp:220,dr:0.10}},
+  runeglove: {name:'룬 글러브',   nameEn:'Rune Gloves',      icon:'✴️', recipe:['bglove','borb'],   fx:{asPct:0.15,ad:18}},
+  windguard: {name:'바람막이',    nameEn:'Windguard',        icon:'🍃', recipe:['bglove','bcloak'], fx:{asPct:0.15,dr:0.08}},
+  spirit:    {name:'정령의 부적', nameEn:'Spirit Charm',     icon:'🧿', recipe:['borb','bcloak'],   fx:{ad:22,dr:0.08}},
 };
 const RECIPES = {};
 for(const k in ITEMS){ const r=ITEMS[k].recipe; if(r) RECIPES[[...r].sort().join('+')]=k; }
 function randComponentKey(){ const ks=Object.keys(COMPONENTS); return ks[Math.floor(Math.random()*ks.length)]; }
 function randItemKey(){ const ks=Object.keys(ITEMS); return ks[Math.floor(Math.random()*ks.length)]; }
-function fxDesc(fx){ const p=[]; if(fx.ad)p.push('공격력+'+fx.ad); if(fx.adPct)p.push('공격력+'+Math.round(fx.adPct*100)+'%'); if(fx.hp)p.push('체력+'+fx.hp); if(fx.asPct)p.push('공속+'+Math.round(fx.asPct*100)+'%'); if(fx.lifesteal)p.push('흡혈'+Math.round(fx.lifesteal*100)+'%'); if(fx.dr)p.push('피해감소'+Math.round(fx.dr*100)+'%'); return p.join(', '); }
+function fxDesc(fx){ const en=(typeof LANG!=='undefined'&&LANG==='en'); const L=en?{ad:'ATK +',hp:'HP +',as:'AtkSpd +',ls:'Lifesteal ',dr:'DmgCut '}:{ad:'공격력+',hp:'체력+',as:'공속+',ls:'흡혈',dr:'피해감소'}; const p=[]; if(fx.ad)p.push(L.ad+fx.ad); if(fx.adPct)p.push(L.ad+Math.round(fx.adPct*100)+'%'); if(fx.hp)p.push(L.hp+fx.hp); if(fx.asPct)p.push(L.as+Math.round(fx.asPct*100)+'%'); if(fx.lifesteal)p.push(L.ls+Math.round(fx.lifesteal*100)+'%'); if(fx.dr)p.push(L.dr+Math.round(fx.dr*100)+'%'); return p.join(', '); }
 function itemIcon(it){ return (ITEMS[it]&&ITEMS[it].icon)||(COMPONENTS[it]&&COMPONENTS[it].icon)||''; }
 function itemFx(it){ return (ITEMS[it]&&ITEMS[it].fx)||(COMPONENTS[it]&&COMPONENTS[it].fx)||null; }
 
@@ -421,14 +460,14 @@ function rollShop(){
   renderShop();
 }
 function reroll(free){
-  if(!free){ if(G.gold<2){flash('골드 부족');return;} G.gold-=2; }
+  if(!free){ if(G.gold<2){flash(t('noGold'));return;} G.gold-=2; }
   rollShop(); renderTop(); sfx('reroll');
 }
 
 function buy(idx){
   const key=G.shop[idx]; if(!key) return;
   const u=UNITS[key];
-  if(G.gold<u.cost){ flash('골드 부족'); return; }
+  if(G.gold<u.cost){ flash(t('noGold')); return; }
   // 벤치 공간 확인(승급 가능하면 예외)
   const benchFull = G.bench.filter(Boolean).length>=9;
   if(benchFull && !wouldCombine(key)){ flash(t('benchFull')); return; }
@@ -516,8 +555,8 @@ function boardCount(){ return G.board.filter(Boolean).length; }
 
 // ---------- XP/레벨 ----------
 function buyXP(){
-  if(G.level>=9){flash('최대 레벨');return;}
-  if(G.gold<4){flash('골드 부족');return;}
+  if(G.level>=9){flash(t('maxLevel'));return;}
+  if(G.gold<4){flash(t('noGold'));return;}
   G.gold-=4; gainXP(4); renderTop();
 }
 function gainXP(n){
@@ -525,7 +564,7 @@ function gainXP(n){
   G.xp+=n;
   while(G.level<9 && G.xp>=XP_NEED[G.level]){
     G.xp-=XP_NEED[G.level]; G.level++;
-    flash('레벨 '+G.level+'!','var(--gold)'); sfx('level');
+    flash(t('levelUp')(G.level),'var(--gold)'); sfx('level');
   }
 }
 
@@ -560,7 +599,7 @@ function renderTop(){
   $('#streak').textContent=Math.abs(G.streak);
   $('#streakStat').firstChild.textContent = G.streak>=0?'🔥 ':'🧊 ';
 }
-function cardHTML(key, ready){if(!key)return{cls:'card empty',html:''};const u=UNITS[key];const sb64=spriteBase64(key);const traitNames=u.traits.map(t=>TRAITS[t].icon+TRAITS[t].name).join(' ');const col=COST_COLOR[u.cost];const h=(ready?'<div class="upbadge">⭐승급!</div>':'')+'<div class="cost">'+u.cost+'💰</div>'+(sb64?'<img src="'+sb64+'" style="width:56px;height:56px;image-rendering:pixelated;object-fit:contain;margin:2px auto;display:block" />':'<div class="ava">'+u.ava+'</div>')+'<div class="nm">'+u.name+'</div><div class="traits">'+traitNames+'</div><div class="costbar" style="background:'+col+'"></div>';return{cls:'card'+(ready?' ready':''),html:h};}
+function cardHTML(key, ready){if(!key)return{cls:'card empty',html:''};const u=UNITS[key];const sb64=spriteBase64(key);const traitNames=u.traits.map(t=>TRAITS[t].icon+TRAITS[t].name).join(' ');const col=COST_COLOR[u.cost];const h=(ready?'<div class="upbadge">'+t('upBadge')+'</div>':'')+'<div class="cost">'+u.cost+'💰</div>'+(sb64?'<img src="'+sb64+'" style="width:56px;height:56px;image-rendering:pixelated;object-fit:contain;margin:2px auto;display:block" />':'<div class="ava">'+u.ava+'</div>')+'<div class="nm">'+u.name+'</div><div class="traits">'+traitNames+'</div><div class="costbar" style="background:'+col+'"></div>';return{cls:'card'+(ready?' ready':''),html:h};}
 function renderShop(){
   const sc={}; G.shop.forEach(k=>{ if(k) sc[k]=(sc[k]||0)+1; });   // 상점 내 같은 직업 수
   $$('#shop .card').forEach(c=>{
@@ -571,7 +610,7 @@ function renderShop(){
     c.className=cls; c.innerHTML=html;
   });
 }
-function pieceHTML(u,small){const d=UNITS[u.key];const sb64=spriteBase64(u.key);const cc=classColorOf(u.key);const costCol=COST_COLOR[d.cost];const stars='⭐'.repeat(u.star);const items=(u.items||[]).map(it=>itemIcon(it)).join('');return'<div class="piece" data-uid="'+u.uid+'" title="'+d.name+' · '+d.cost+'코스트" style="background:linear-gradient(160deg,'+cc+',#0007);border-color:'+costCol+'"><div class="stars">'+stars+'</div>'+(sb64?'<img src="'+sb64+'" style="width:44px;height:44px;image-rendering:pixelated;object-fit:contain;margin-top:4px;display:block" />':'<div class="pemoji">'+d.ava+'</div>')+'<div class="pname">'+d.name+'</div>'+(items?'<div class="items">'+items+'</div>':'')+'</div>';}
+function pieceHTML(u,small){const d=UNITS[u.key];const sb64=spriteBase64(u.key);const cc=classColorOf(u.key);const costCol=COST_COLOR[d.cost];const stars='⭐'.repeat(u.star);const items=(u.items||[]).map(it=>itemIcon(it)).join('');return'<div class="piece" data-uid="'+u.uid+'" title="'+d.name+' · '+d.cost+t('costSuffix')+'" style="background:linear-gradient(160deg,'+cc+',#0007);border-color:'+costCol+'"><div class="stars">'+stars+'</div>'+(sb64?'<img src="'+sb64+'" style="width:44px;height:44px;image-rendering:pixelated;object-fit:contain;margin-top:4px;display:block" />':'<div class="pemoji">'+d.ava+'</div>')+'<div class="pname">'+d.name+'</div>'+(items?'<div class="items">'+items+'</div>':'')+'</div>';}
 function renderBench(){
   const b=$('#bench'); b.innerHTML='';
   for(let i=0;i<9;i++){
@@ -587,7 +626,7 @@ function renderTraits(){
   const counts=activeTraits(G.board);
   const arr=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
   const el=$('#traits'); el.innerHTML='';
-  if(!arr.length){ el.innerHTML='<div class="help" style="text-align:left">보드에 유닛을 배치하면<br>시너지가 표시됩니다.</div>'; return;}
+  if(!arr.length){ el.innerHTML='<div class="help" style="text-align:left">'+t('synHint')+'</div>'; return;}
   arr.forEach(t=>{
     const tr=TRAITS[t], c=counts[t], tier=traitTier(t,c);
     const pips=tr.bps.map(b=> c>=b?'●':'○').join('');
@@ -606,14 +645,14 @@ function renderItems(){
   // 🧩 조각 (2개 클릭 = 조합)
   const cb=$('#compBar');
   if(cb){
-    const ch=$('#compHint'); if(ch) ch.textContent = selComp!=null?'→ 조각 클릭(조합) or 캐릭터 클릭(장착)':(G.comps.length?'(조각클릭→조합/장착)':'');
+    const ch=$('#compHint'); if(ch) ch.textContent = selComp!=null?t('compHintSel'):(G.comps.length?t('compHintIdle'):'');
     cb.innerHTML='';
-    if(!G.comps.length){ cb.innerHTML='<div class="help" style="text-align:left">전투 보상으로 조각 획득 →<br>2개 합쳐 아이템 제작</div>'; }
+    if(!G.comps.length){ cb.innerHTML='<div class="help" style="text-align:left">'+t('compEmpty')+'</div>'; }
     else G.comps.forEach((it,i)=>{
       const d=COMPONENTS[it]; if(!d) return;
       const el=document.createElement('div');
       el.className='item'+(selComp===i?' sel':'');
-      el.title=d.name+' — '+fxDesc(d.fx)+' (조각)';
+      el.title=d.name+' — '+fxDesc(d.fx)+t('compSuffix');
       el.textContent=d.icon;
       el.onclick=()=>{ if(G.phase!=='plan')return; if(selComp==null){selComp=i;renderItems();} else if(selComp===i){selComp=null;renderItems();} else combineComp(selComp,i); };
       cb.appendChild(el);
@@ -622,9 +661,9 @@ function renderItems(){
   // 🎒 완성 아이템 (클릭 → 캐릭터 장착)
   const bar=$('#itemBar'); if(!bar) return;
   const hint=$('#itemHint');
-  if(hint) hint.textContent = selItem!=null ? '→ 캐릭터 클릭' : (G.items.length?'(클릭→캐릭터)':'');
+  if(hint) hint.textContent = selItem!=null ? t('itemHintSel') : (G.items.length?t('itemHintIdle'):'');
   bar.innerHTML='';
-  if(!G.items.length){ bar.innerHTML='<div class="help" style="text-align:left">조각 2개를 합쳐<br>아이템을 만드세요.</div>'; return; }
+  if(!G.items.length){ bar.innerHTML='<div class="help" style="text-align:left">'+t('itemEmpty')+'</div>'; return; }
   G.items.forEach((it,i)=>{
     const d=ITEMS[it]; if(!d) return;
     const el=document.createElement('div');
@@ -638,10 +677,10 @@ function renderItems(){
 function combineComp(i,j){
   const a=G.comps[i], b=G.comps[j], itemKey=RECIPES[[a,b].sort().join('+')];
   selComp=null;
-  if(!itemKey){ flash('조합 불가'); renderItems(); return; }
+  if(!itemKey){ flash(t('cantCombine')); renderItems(); return; }
   const hi=Math.max(i,j), lo=Math.min(i,j); G.comps.splice(hi,1); G.comps.splice(lo,1);
   G.items.push(itemKey);
-  flash('🔧 '+ITEMS[itemKey].name+' 완성!','var(--gold)');
+  flash(t('crafted')(ITEMS[itemKey].name),'var(--gold)');
   renderAll();
 }
 function renderRecipeTable(){
@@ -662,7 +701,7 @@ function equipItem(u){
   u.items.push(G.items[selItem]);
   G.items.splice(selItem,1);
   selItem=null;
-  flash('🎁 '+UNITS[u.key].name+' 장착!','var(--gold)');
+  flash(t('equipped')(UNITS[u.key].name),'var(--gold)');
   renderAll();
 }
 
@@ -799,7 +838,7 @@ function drawUnitAt(x,y,u,ring,hpFrac,flash){
 // =========================================================================
 let battle=null;
 function startFight(){
-  if(boardCount()===0){ flash('보드에 유닛을 배치하세요'); return; }
+  if(boardCount()===0){ flash(t('placeFirst')); return; }
   G.phase='combat';
   $('#fightBtn').disabled=true; $('#rerollBtn').disabled=true; $('#xpBtn').disabled=true;
   $('#phase').innerHTML=t('fighting');
@@ -810,8 +849,8 @@ function startFight(){
   applyTraitBuffs(allies);
   applyTraitBuffs(enemies);
   battle={allies,enemies,t:0,over:false,floats:[],fx:[]};
-  if(BOSS_ROUND[G.round]){ flash('⚠️ 보스 등장: '+BOSS_LIST[BOSS_ROUND[G.round]].name+'!','#ff6a6a'); }
-  else if(RIVAL_ROUND[G.round]){ flash('⚔️ 라이벌 매치! (PvP)','#ffcf4a'); }
+  if(BOSS_ROUND[G.round]){ flash(t('bossAppear')(BOSS_LIST[BOSS_ROUND[G.round]].name),'#ff6a6a'); }
+  else if(RIVAL_ROUND[G.round]){ flash(t('rivalMatch'),'#ffcf4a'); }
   combatLoop();
 }
 
@@ -868,25 +907,25 @@ function drawSlash(f){
 // ================= 궁극기(시그니처 스킬) 시스템 =================
 // 역할별 기본 궁극기
 const ULT_BYROLE = {
-  guardian:{type:'shield', name:'철벽 방어', pow:1.0},
-  striker: {type:'nuke',   name:'강타',     pow:1.8},
-  marksman:{type:'multishot',name:'연사',   pow:1.0, shots:3},
-  caster:  {type:'aoe',    name:'마력 폭발', pow:1.3, radius:1},
-  support: {type:'heal',   name:'치유',     pow:1.0},
+  guardian:{type:'shield', name:'철벽 방어', nameEn:'Iron Wall', pow:1.0},
+  striker: {type:'nuke',   name:'강타',     nameEn:'Smash',     pow:1.8},
+  marksman:{type:'multishot',name:'연사',   nameEn:'Rapid Fire',pow:1.0, shots:3},
+  caster:  {type:'aoe',    name:'마력 폭발', nameEn:'Mana Burst',pow:1.3, radius:1},
+  support: {type:'heal',   name:'치유',     nameEn:'Heal',      pow:1.0},
 };
 // 직업별 시그니처(이름/세기 오버라이드)
 const ULT_SIG = {
-  hero:      {name:'히어로즈 윌', type:'nuke', pow:2.6},
-  darkknight:{name:'다크 임팩트', type:'nuke', pow:2.4},
-  viper:     {name:'에너지 버스터',type:'nuke', pow:2.3},
-  knight:    {name:'아이언 윌',  type:'shield', pow:1.4},
-  archmage:  {name:'제네시스',   type:'aoe', pow:1.9, radius:2},
-  bishop:    {name:'엔젤레이',   type:'heal', pow:1.8},
-  bowmaster: {name:'하이퍼 스트라이크', type:'multishot', pow:1.3, shots:4},
-  nightlord: {name:'쇼다운',     type:'multishot', pow:1.1, shots:5},
-  ranger:    {name:'애로우 레인', type:'multishot', pow:1.2, shots:3},
-  priest:    {name:'홀리 라이트', type:'heal', pow:1.3},
-  hermit:    {name:'어벤져',     type:'nuke', pow:1.9},
+  hero:      {name:'히어로즈 윌', nameEn:"Hero's Will",   type:'nuke', pow:2.6},
+  darkknight:{name:'다크 임팩트', nameEn:'Dark Impact',   type:'nuke', pow:2.4},
+  viper:     {name:'에너지 버스터',nameEn:'Energy Buster', type:'nuke', pow:2.3},
+  knight:    {name:'아이언 윌',  nameEn:'Iron Will',     type:'shield', pow:1.4},
+  archmage:  {name:'제네시스',   nameEn:'Genesis',       type:'aoe', pow:1.9, radius:2},
+  bishop:    {name:'엔젤레이',   nameEn:'Angel Ray',     type:'heal', pow:1.8},
+  bowmaster: {name:'하이퍼 스트라이크', nameEn:'Hyper Strike', type:'multishot', pow:1.3, shots:4},
+  nightlord: {name:'쇼다운',     nameEn:'Showdown',      type:'multishot', pow:1.1, shots:5},
+  ranger:    {name:'애로우 레인', nameEn:'Arrow Rain',    type:'multishot', pow:1.2, shots:3},
+  priest:    {name:'홀리 라이트', nameEn:'Holy Light',    type:'heal', pow:1.3},
+  hermit:    {name:'어벤져',     nameEn:'Avenger',       type:'nuke', pow:1.9},
 };
 // 직업별 시그니처 이펙트(vfx)
 const ULT_VFX={
@@ -901,7 +940,7 @@ function ultFor(key){
   const role=d.traits[1]||'striker';
   const base=ULT_BYROLE[role]||ULT_BYROLE.striker;
   const sig=ULT_SIG[key]||{};
-  return {name:sig.name||base.name, type:sig.type||base.type, pow:sig.pow||base.pow||1.4,
+  return {name:sig.name||base.name, nameEn:sig.nameEn||base.nameEn||sig.name||base.name, type:sig.type||base.type, pow:sig.pow||base.pow||1.4,
           radius:sig.radius||base.radius||1, shots:sig.shots||base.shots||3, vfx:ULT_VFX[key]||'boom'};
 }
 // 공통 데미지 처리(피해감소·보호막·부활·데미지숫자)
@@ -913,7 +952,7 @@ function applyDamage(tgt,raw,isUlt){
   battle.floats.push({col:tgt.col,row:tgt.row,txt:Math.round(raw),t:0,ally:tgt.ally,crit:!!isUlt});
   if(tgt.hp<=0 && tgt.revive && !tgt.revived){
     tgt.revived=true; tgt.hp=Math.round(tgt.maxHp*0.45);
-    battle.floats.push({col:tgt.col,row:tgt.row,txt:'부활!',t:0,heal:true});
+    battle.floats.push({col:tgt.col,row:tgt.row,txt:t('revive'),t:0,heal:true});
   }
   if(tgt.hp<=0) sfx('death');
   return dmg;
@@ -987,8 +1026,9 @@ function castUlt(c){
   const foes=c.ally?battle.enemies:battle.allies;
   const mates=c.ally?battle.allies:battle.enemies;
   const cx=unitX(c), cy=unitY(c), color=attackColor(c);
-  battle.fx.push({type:'ulttext',x:cx,y:cy,t:0,txt:u.name,color:c.ally?'#9ad0ff':'#ff9a9a'});
-  ultBanner={name:(c.ally?'':'적 ')+u.name, color, t:0};   // 화면 중앙 큰 스킬명(모든 궁극기)
+  var _un=(LANG==='en'?(u.nameEn||u.name):u.name);   // 궁극기 이름(언어별)
+  battle.fx.push({type:'ulttext',x:cx,y:cy,t:0,txt:_un,color:c.ally?'#9ad0ff':'#ff9a9a'});
+  ultBanner={name:(c.ally?'':t('enemyPrefix'))+_un, color, t:0};   // 화면 중앙 큰 스킬명(모든 궁극기)
   // ★보장된 큰 보드 이펙트 (spawnUltVfx가 실패해도 무조건 보임)
   const _tg=nearestEnemy(c,foes), _gx=_tg?unitX(_tg):cx, _gy=_tg?unitY(_tg):cy;
   battle.fx.push({type:'burst',x:_gx,y:_gy,t:0,color,max:110});
@@ -1106,7 +1146,7 @@ function makeCombatant(u,ally){
     // 궁극기/마나
     mana:0,
     maxMana: isJob ? (22 + (base.cost||1)*5) : (isBoss ? 80 : 0),
-    ult: isJob ? ultFor(u.key) : (isBoss ? {name:base.name+'의 분노',type:'aoe',pow:1.3,radius:2,shots:3,vfx:'megaslash'} : null),
+    ult: isJob ? ultFor(u.key) : (isBoss ? {name:base.name+'의 분노',nameEn:base.name+"'s Rage",type:'aoe',pow:1.3,radius:2,shots:3,vfx:'megaslash'} : null),
     shield:0, castT:0,
     // 치명타 확률(도적 계열 +15%)
     crit: isJob ? (0.15 + ((base.traits||[]).includes('thief')?0.15:0)) : 0.08,
@@ -1507,19 +1547,19 @@ function dropUnit(u,e){
   if(slot){ moveToBench(u,+slot.dataset.bench); return; }
   if(el&&el.closest&&el.closest('#bench')){ moveToBench(u,firstEmptyBench()); return; }
   const c=cellAt(e.clientX,e.clientY);
-  if(c){ if(c.row>=ROWS/2) placeOnBoard(u,c.col,c.row); else flash('아군 진영(아래 3줄)에만 배치'); return; }
+  if(c){ if(c.row>=ROWS/2) placeOnBoard(u,c.col,c.row); else flash(t('allyZone')); return; }
   renderAll();   // 보드 밖으로 떨어뜨리면 원위치
 }
 function returnToBench(u){
   const i=firstEmptyBench();
-  if(i<0){ flash('벤치 가득참'); return; }
+  if(i<0){ flash(t('benchFull')); return; }
   G.board=G.board.filter(x=>x!==u);
   delete u.col; delete u.row;
   G.bench[i]=u; renderAll();
 }
 function autoPlace(u){
   if(G.board.includes(u)) return;
-  if(boardCount()>=BOARD_CAP[G.level]){ flash('보드 정원 초과 (Lv'+G.level+' = '+BOARD_CAP[G.level]+')'); return; }
+  if(boardCount()>=BOARD_CAP[G.level]){ flash(t('boardCap')(G.level,BOARD_CAP[G.level])); return; }
   for(let r=3;r<ROWS;r++) for(let col=0;col<COLS;col++){
     if(!G.board.find(x=>x&&x.col===col&&x.row===r)){ placeOnBoard(u,col,r); return; }
   }
@@ -1527,7 +1567,7 @@ function autoPlace(u){
 function moveToBench(u,slot){
   if(G.phase!=='plan')return;
   if(slot<0 || (G.bench[slot] && G.bench[slot]!==u)) slot=firstEmptyBench();
-  if(slot<0){ flash('벤치 가득참'); return; }
+  if(slot<0){ flash(t('benchFull')); return; }
   G.board=G.board.filter(x=>x!==u);
   G.bench=G.bench.map(x=>x===u?null:x);
   delete u.col; delete u.row;
@@ -1539,12 +1579,12 @@ function moveGhost(x,y){ const g=$('#ghost'); if(g){ g.style.left=x+'px'; g.styl
 function killGhost(){ const g=$('#ghost'); if(g)g.remove(); }
 function placeOnBoard(u,col,row){
   if(G.phase!=='plan')return;
-  if(row<ROWS/2){ flash('플레이어 진영(아래)에만 배치'); return; }
+  if(row<ROWS/2){ flash(t('playerZone')); return; }
   // 점유 확인
   const occ=G.board.find(x=>x&&x.col===col&&x.row===row);
   // 보드 정원
   const onBoard = G.board.includes(u);
-  if(!onBoard && boardCount()>=BOARD_CAP[G.level]){ flash('보드 정원 초과 (Lv'+G.level+' = '+BOARD_CAP[G.level]+')'); return; }
+  if(!onBoard && boardCount()>=BOARD_CAP[G.level]){ flash(t('boardCap')(G.level,BOARD_CAP[G.level])); return; }
   if(occ && occ!==u){
     // 자리 교환
     occ.col=u.col!==undefined?u.col:occ.col; occ.row=u.row!==undefined?u.row:occ.row;
@@ -1610,16 +1650,16 @@ function resetGame(){
 function showAllSprites(){
   var d=document.createElement("div");d.id="sv";d.style.cssText="position:fixed;inset:0;background:#000e;display:flex;align-items:center;justify-content:center;z-index:70";
   var box=document.createElement("div");box.className="box";box.style.cssText="padding:12px;max-width:90vw;max-height:80vh;overflow:auto";
-  box.innerHTML='<h3 style="color:var(--gold);margin:0 0 8px">모든 스프라이트 ('+Object.keys(BASE).length+'종)</h3><div id="svgrid" style="display:flex;flex-wrap:wrap;gap:4px"></div><button class="btn" style="margin-top:8px" onclick="document.getElementById(\'sv\').remove()">닫기</button>';
+  box.innerHTML='<h3 style="color:var(--gold);margin:0 0 8px">'+t('allSprites')(Object.keys(BASE).length)+'</h3><div id="svgrid" style="display:flex;flex-wrap:wrap;gap:4px"></div><button class="btn" style="margin-top:8px" onclick="document.getElementById(\'sv\').remove()">'+t('close')+'</button>';
   d.appendChild(box);document.body.appendChild(d);
   var g=document.getElementById("svgrid");
   for(var k in BASE){var c=document.createElement("div");c.style.cssText="width:90px;text-align:center;font-size:9px";c.innerHTML='<img src="'+BASE[k]+'" style="width:64px;height:64px;image-rendering:pixelated;object-fit:contain;background:rgba(255,255,255,0.02)"><div>'+k+'</div>';g.appendChild(c);}
 }
 /* ===== 라이브 스프라이트(무기/옷 즉시 변경) — 이 숫자만 바꾸면 외형이 바뀜 ===== */
 const HAIR={warrior:30030,mage:33000,archer:30150,thief:30240,pirate:30060};   // 계열별 헤어
-const OVERALL2={  // 옷: 1·2코=기본의상(항상 착용), 3·4·5코=계열 갑옷(점점 고급). ★맨몸 금지(검수 반영)
-  warrior:{1:1050184,2:1050447,3:1050021,4:1050062,5:1050098}, mage:{1:1050752,2:1050733,3:1050053,4:1050061,5:1050097},
-  archer:{1:1050495,2:1050674,3:1050055,4:1050063}, thief:{1:1050447,2:1050247,3:1050056,4:1050064}, pirate:{1:1050152,2:1051180,3:1050055,4:1050062,5:1050096}};
+const OVERALL2={  // 옷: 1·2코=기본의상(항상 착용·전신 overall), 3·4·5코=계열 갑옷(점점 고급). ★맨몸 금지(검수 반영) — 1코는 다리까지 덮는 전신 overall로 교체
+  warrior:{1:1050633,2:1050447,3:1050021,4:1050062,5:1050098}, mage:{1:1050752,2:1050733,3:1050053,4:1050061,5:1050097},
+  archer:{1:1050010,2:1050674,3:1050055,4:1050063}, thief:{1:1050050,2:1050247,3:1050056,4:1050064}, pirate:{1:1050152,2:1051180,3:1050055,4:1050062,5:1050096}};
 const HAT={warrior:1002005,mage:1003308,archer:1003135,thief:1002759,pirate:1002553}; // 전사=철투구(터프), 그 외=얼굴노출 직업모자. 2코부터
 const CAPE={4:1102041,5:1102041};                                              // 4·5코 망토
 const MOUNT={};                                                                // 탈것 폐기
@@ -1651,20 +1691,23 @@ const EN={
   units:{swordman:'Swordman',magician:'Magician',archer1:'Archer',rogue:'Rogue',pirate1:'Pirate',page:'Page',wizard:'Thunder Wizard',hunter:'Hunter',assassin:'Assassin',brawler:'Brawler',knight:'Knight',priest:'Priest',ranger:'Ranger',hermit:'Hermit',hero:'Hero',bishop:'Bishop',bowmaster:'Bowmaster',nightlord:'Night Lord',darkknight:'Dark Knight',archmage:'Arch Mage',viper:'Viper'},
   mons:{snail:'Snail',omush:'Orange Mushroom',pig:'Ribbon Pig',boar:'Wild Boar',stump:'Stump',bmush:'Blue Mushroom',necki:'Jr. Necki',eye:'Curse Eye',zombie:'Zombie Mushroom',yeti:'Yeti',drake:'Drake',griffey:'Griffey',mushmom:'Mushmom',zakum:'Zakum',horntail:'Horntail',balrog:'Balrog'},
   traits:{warrior:['Warrior','Bonus HP (Tank)'],mage:['Mage','Magic ATK'],archer:['Archer','Attack Speed'],thief:['Thief','Critical Hit'],pirate:['Pirate','HP & ATK'],guardian:['Guardian','Bonus HP'],striker:['Striker','Melee ATK'],marksman:['Marksman','Bonus ATK'],caster:['Caster','Magic Burst'],support:['Support','Combat-start Heal']},
-  ui:{sub:'v1.0 · Items · Ultimates',prep:'Preparation',fighting:'⚔️ In Battle...',win:'🎉 Victory!',draw:'🤝 Draw',lose:'💀 Defeat',xp:'Buy XP',xpSub:'4 Gold → +4xp',reroll:'Refresh 🔄',rerollSub:'2 Gold',fight:'Start Battle ▶',placeHint:'Drag units<br>onto the board',synergy:'🔗 Synergies',comp:'🧩 Components',recipe:'📖 Recipes',item:'🎒 Items',help:'📋 Help',cont:'Continue',restart:'Restart',start:'Start',recipeTitle:'📖 Item Recipes',recipeDesc:'Combine 2 components to craft the item. (row × col)',close:'Close',nextGold:'Next-round gold',rWin:'Enemies wiped out.',rDraw:'Time out.',rLose:(d)=>`HP -${d}`,gotComp:'<br>🧩 Component obtained! (combine 2 on the right)',clear:'👑 Clear!',gameover:'☠️ Game Over',clearBody:(r)=>`You survived all 20 rounds!<br>Final round: ${r}`,goBody:(r)=>`Defeated at round ${r}.<br>Try again!`,upgrade:(n,s)=>`⭐ ${n} → ${s}★!`,benchFull:'Bench full',maxItem:'Max 3 items',slotFull:'Slots full (max 3)',returned:(n)=>`${n} item(s) returned to bag`,equipComp:'🧩 Component equipped',crafted:(n)=>`🔧 ${n} crafted!`,fiveStyle:(s)=>`5-cost style: ${s}`,cash:'Cash Crown',boss:'Boss Helmet',langBtn:'한국어',intro:'Build a team of <b>MapleStory job characters</b> and hunt monster waves!<br><br>• Recruit jobs in the shop (1st~5th advancement = cost 1~5)<br>• <b>Click</b>=move, <b>Drag</b>=place precisely<br>• 3 of same job = ⭐ upgrade<br>• Class (Warrior/Mage/Archer/Thief/Pirate) + Role synergies<br>• 🎒 Click item → click unit = equip (max 3)<br>• R5·10·15·20 = boss (Mushmom→Zakum→Horntail→Balrog)<br><br>Survive 20 rounds!',helpHtml:'• Click shop card = recruit (to bench)<br>• <b>Click</b> unit = move board↔bench<br>• <b>Drag</b> unit = place precisely<br>• 3 of same job = ⭐2 auto-upgrade<br>• Click item → click unit = equip (max 3)<br>• Right-click unit = sell<br>• Enemies = monster waves / R5·10·15·20 = boss<br>• Gold interest: +1 per 10 gold (max +5)<br>• Win/loss streak bonus gold'}
+  ui:{sub:'v1.0 · Items · Ultimates',prep:'Preparation',fighting:'⚔️ In Battle...',win:'🎉 Victory!',draw:'🤝 Draw',lose:'💀 Defeat',xp:'Buy XP',xpSub:'4 Gold → +4xp',reroll:'Refresh 🔄',rerollSub:'2 Gold',fight:'Start Battle ▶',placeHint:'Drag units<br>onto the board',synergy:'🔗 Synergies',comp:'🧩 Components',recipe:'📖 Recipes',item:'🎒 Items',help:'📋 Help',cont:'Continue',restart:'Restart',start:'Start',recipeTitle:'📖 Item Recipes',recipeDesc:'Combine 2 components to craft the item. (row × col)',close:'Close',nextGold:'Next-round gold',rWin:'Enemies wiped out.',rDraw:'Time out.',rLose:(d)=>`HP -${d}`,gotComp:'<br>🧩 Component obtained! (combine 2 on the right)',clear:'👑 Clear!',gameover:'☠️ Game Over',clearBody:(r)=>`You survived all 20 rounds!<br>Final round: ${r}`,goBody:(r)=>`Defeated at round ${r}.<br>Try again!`,upgrade:(n,s)=>`⭐ ${n} → ${s}★!`,benchFull:'Bench full',maxItem:'Max 3 items',slotFull:'Slots full (max 3)',returned:(n)=>`${n} item(s) returned to bag`,equipComp:'🧩 Component equipped',crafted:(n)=>`🔧 ${n} crafted!`,fiveStyle:(s)=>`5-cost style: ${s}`,cash:'Cash Crown',boss:'Boss Helmet',langBtn:'한국어',noGold:'Not enough gold',maxLevel:'Max level',levelUp:(n)=>`Level ${n}!`,cantCombine:'Cannot combine',equipped:(n)=>`🎁 ${n} equipped!`,placeFirst:'Place units on the board',bossAppear:(n)=>`⚠️ Boss: ${n}!`,rivalMatch:'⚔️ Rival Match! (PvP)',allyZone:'Place in your zone (bottom 3 rows)',playerZone:'Place in your zone (bottom)',boardCap:(lv,cap)=>`Board full (Lv${lv} = ${cap})`,synHint:'Place units on the board<br>to show synergies.',compHintSel:'→ click a piece (combine) or a unit (equip)',compHintIdle:'(click piece → combine/equip)',compEmpty:'Win battles to earn pieces →<br>combine 2 into an item',compSuffix:' (piece)',itemHintSel:'→ click a unit',itemHintIdle:'(click → unit)',itemEmpty:'Combine 2 pieces<br>to craft an item.',revive:'REVIVE!',enemyPrefix:'Enemy ',upBadge:'⭐UP!',costSuffix:'-cost',allSprites:(n)=>`All sprites (${n})`,intro:'Build a team of <b>MapleStory job characters</b> and hunt monster waves!<br><br>• Recruit jobs in the shop (1st~5th advancement = cost 1~5)<br>• <b>Click</b>=move, <b>Drag</b>=place precisely<br>• 3 of same job = ⭐ upgrade<br>• Class (Warrior/Mage/Archer/Thief/Pirate) + Role synergies<br>• 🎒 Click item → click unit = equip (max 3)<br>• R5·10·15·20 = boss (Mushmom→Zakum→Horntail→Balrog)<br><br>Survive 20 rounds!',helpHtml:'• Click shop card = recruit (to bench)<br>• <b>Click</b> unit = move board↔bench<br>• <b>Drag</b> unit = place precisely<br>• 3 of same job = ⭐2 auto-upgrade<br>• Click item → click unit = equip (max 3)<br>• Right-click unit = sell<br>• Enemies = monster waves / R5·10·15·20 = boss<br>• Gold interest: +1 per 10 gold (max +5)<br>• Win/loss streak bonus gold'}
 };
-const KO={ui:{sub:'v1.0 · 조각장착·궁극기',prep:'준비 단계',fighting:'⚔️ 전투 중...',win:'🎉 승리!',draw:'🤝 무승부',lose:'💀 패배',xp:'XP 구매',xpSub:'4골드 → +4xp',reroll:'새로고침 🔄',rerollSub:'2골드',fight:'전투 시작 ▶',placeHint:'유닛을 위 보드로<br>드래그해 배치',synergy:'🔗 시너지',comp:'🧩 조각',recipe:'📖 조합표',item:'🎒 아이템',help:'📋 도움말',cont:'계속',restart:'다시 시작',start:'시작하기',recipeTitle:'📖 아이템 조합표',recipeDesc:'조각 2개를 합치면 해당 아이템이 만들어집니다. (행 × 열)',close:'닫기',nextGold:'다음 라운드 골드',rWin:'적을 전멸시켰습니다.',rDraw:'시간 초과.',rLose:(d)=>`체력 -${d}`,gotComp:'<br>🧩 조각 획득! (우측에서 2개 조합)',clear:'👑 클리어!',gameover:'☠️ 게임 오버',clearBody:(r)=>`20라운드를 모두 버텨냈습니다!<br>최종 라운드: ${r}`,goBody:(r)=>`${r}라운드에서 패배.<br>다시 도전해보세요!`,upgrade:(n,s)=>`⭐ ${n} ${s}성 승급!`,benchFull:'벤치 가득참',maxItem:'아이템은 최대 3개',slotFull:'슬롯 가득(최대 3)',returned:(n)=>`가방으로 반환된 아이템 ${n}개`,equipComp:'🧩 조각 장착',crafted:(n)=>`🔧 ${n} 완성!`,fiveStyle:(s)=>`5코 스타일: ${s}`,cash:'캐시 크라운',boss:'보스 투구',langBtn:'English',intro:'메이플 <b>직업 캐릭터</b>로 팀을 꾸려 몬스터 웨이브를 사냥하세요!<br><br>• 상점에서 직업 영입(1~5차전직 = 코스트1~5)<br>• 유닛 <b>클릭</b>=올리기/내리기, <b>드래그</b>=정밀 배치<br>• 같은 직업 3개 = ⭐ 승급<br>• 계열(전사/마법사/궁수/도적/해적) + 역할 시너지<br>• 🎒 아이템 클릭 → 캐릭터 클릭 = 장착(최대3)<br>• 5·10·15·20라운드 = 보스전(머쉬맘→자쿰→혼테일→발록)<br><br>20라운드 생존이 목표!',helpHtml:'• 상점 카드 클릭 = 직업 영입(벤치로)<br>• 유닛 <b>클릭</b> = 보드↔벤치 올리기/내리기<br>• 유닛 <b>드래그</b> = 원하는 칸에 정밀 배치<br>• 같은 직업 3개 = ⭐2 자동전직(승급)<br>• 아이템 클릭 → 캐릭터 클릭 = 장착(최대3)<br>• 유닛 우클릭 = 판매<br>• 적 = 몬스터 웨이브 / 5·10·15·20R = 보스<br>• 골드 이자: 10골드당 +1 (최대 +5)<br>• 연승/연패 보너스 골드'}};
+const KO={ui:{sub:'v1.0 · 조각장착·궁극기',prep:'준비 단계',fighting:'⚔️ 전투 중...',win:'🎉 승리!',draw:'🤝 무승부',lose:'💀 패배',xp:'XP 구매',xpSub:'4골드 → +4xp',reroll:'새로고침 🔄',rerollSub:'2골드',fight:'전투 시작 ▶',placeHint:'유닛을 위 보드로<br>드래그해 배치',synergy:'🔗 시너지',comp:'🧩 조각',recipe:'📖 조합표',item:'🎒 아이템',help:'📋 도움말',cont:'계속',restart:'다시 시작',start:'시작하기',recipeTitle:'📖 아이템 조합표',recipeDesc:'조각 2개를 합치면 해당 아이템이 만들어집니다. (행 × 열)',close:'닫기',nextGold:'다음 라운드 골드',rWin:'적을 전멸시켰습니다.',rDraw:'시간 초과.',rLose:(d)=>`체력 -${d}`,gotComp:'<br>🧩 조각 획득! (우측에서 2개 조합)',clear:'👑 클리어!',gameover:'☠️ 게임 오버',clearBody:(r)=>`20라운드를 모두 버텨냈습니다!<br>최종 라운드: ${r}`,goBody:(r)=>`${r}라운드에서 패배.<br>다시 도전해보세요!`,upgrade:(n,s)=>`⭐ ${n} ${s}성 승급!`,benchFull:'벤치 가득참',maxItem:'아이템은 최대 3개',slotFull:'슬롯 가득(최대 3)',returned:(n)=>`가방으로 반환된 아이템 ${n}개`,equipComp:'🧩 조각 장착',crafted:(n)=>`🔧 ${n} 완성!`,fiveStyle:(s)=>`5코 스타일: ${s}`,cash:'캐시 크라운',boss:'보스 투구',langBtn:'English',noGold:'골드 부족',maxLevel:'최대 레벨',levelUp:(n)=>`레벨 ${n}!`,cantCombine:'조합 불가',equipped:(n)=>`🎁 ${n} 장착!`,placeFirst:'보드에 유닛을 배치하세요',bossAppear:(n)=>`⚠️ 보스 등장: ${n}!`,rivalMatch:'⚔️ 라이벌 매치! (PvP)',allyZone:'아군 진영(아래 3줄)에만 배치',playerZone:'플레이어 진영(아래)에만 배치',boardCap:(lv,cap)=>`보드 정원 초과 (Lv${lv} = ${cap})`,synHint:'보드에 유닛을 배치하면<br>시너지가 표시됩니다.',compHintSel:'→ 조각 클릭(조합) or 캐릭터 클릭(장착)',compHintIdle:'(조각클릭→조합/장착)',compEmpty:'전투 보상으로 조각 획득 →<br>2개 합쳐 아이템 제작',compSuffix:' (조각)',itemHintSel:'→ 캐릭터 클릭',itemHintIdle:'(클릭→캐릭터)',itemEmpty:'조각 2개를 합쳐<br>아이템을 만드세요.',revive:'부활!',enemyPrefix:'적 ',upBadge:'⭐승급!',costSuffix:'코스트',allSprites:(n)=>`모든 스프라이트 (${n}종)`,intro:'메이플 <b>직업 캐릭터</b>로 팀을 꾸려 몬스터 웨이브를 사냥하세요!<br><br>• 상점에서 직업 영입(1~5차전직 = 코스트1~5)<br>• 유닛 <b>클릭</b>=올리기/내리기, <b>드래그</b>=정밀 배치<br>• 같은 직업 3개 = ⭐ 승급<br>• 계열(전사/마법사/궁수/도적/해적) + 역할 시너지<br>• 🎒 아이템 클릭 → 캐릭터 클릭 = 장착(최대3)<br>• 5·10·15·20라운드 = 보스전(머쉬맘→자쿰→혼테일→발록)<br><br>20라운드 생존이 목표!',helpHtml:'• 상점 카드 클릭 = 직업 영입(벤치로)<br>• 유닛 <b>클릭</b> = 보드↔벤치 올리기/내리기<br>• 유닛 <b>드래그</b> = 원하는 칸에 정밀 배치<br>• 같은 직업 3개 = ⭐2 자동전직(승급)<br>• 아이템 클릭 → 캐릭터 클릭 = 장착(최대3)<br>• 유닛 우클릭 = 판매<br>• 적 = 몬스터 웨이브 / 5·10·15·20R = 보스<br>• 골드 이자: 10골드당 +1 (최대 +5)<br>• 연승/연패 보너스 골드'}};
 var LANG='en';
 function t(k){ return (LANG==='en'?EN.ui:KO.ui)[k]; }
 // 한국어 원본 보존(최초 1회)
-[UNITS,MONSTERS,BOSS_LIST].forEach(function(M){for(var k in M) M[k].nameKo=M[k].name;});
+[UNITS,MONSTERS,BOSS_LIST,ITEMS,COMPONENTS].forEach(function(M){for(var k in M) M[k].nameKo=M[k].name;});
 for(var _k in TRAITS){ TRAITS[_k].nameKo=TRAITS[_k].name; TRAITS[_k].descKo=TRAITS[_k].desc; }
 function setLang(l){
   LANG=l; var en=(l==='en');
   for(var k in UNITS) UNITS[k].name = en?(EN.units[k]||UNITS[k].nameKo):UNITS[k].nameKo;
   for(var k in MONSTERS) MONSTERS[k].name = en?(EN.mons[k]||MONSTERS[k].nameKo):MONSTERS[k].nameKo;
   for(var k in BOSS_LIST) BOSS_LIST[k].name = en?(EN.mons[k]||BOSS_LIST[k].nameKo):BOSS_LIST[k].nameKo;
+  for(var k in ITEMS) ITEMS[k].name = en?(ITEMS[k].nameEn||ITEMS[k].nameKo):ITEMS[k].nameKo;
+  for(var k in COMPONENTS) COMPONENTS[k].name = en?(COMPONENTS[k].nameEn||COMPONENTS[k].nameKo):COMPONENTS[k].nameKo;
   for(var k in TRAITS){ var e=EN.traits[k]; TRAITS[k].name=en&&e?e[0]:TRAITS[k].nameKo; TRAITS[k].desc=en&&e?e[1]:TRAITS[k].descKo; }
+  try{ document.documentElement.lang=l; document.title=en?'Maple Tactics — Job Auto Battler':'Maple Tactics — 메이플 택틱스'; }catch(e){}
   var T=function(id,v){var x=document.getElementById(id); if(x)x.textContent=v;};
   var H=function(id,v){var x=document.getElementById(id); if(x)x.innerHTML=v;};
   H('titleSub',t('sub')); H('xpBtn',t('xp')+'<br><small>'+t('xpSub')+'</small>'); H('rerollBtn',t('reroll')+'<br><small>'+t('rerollSub')+'</small>');

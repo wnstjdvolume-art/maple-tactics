@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Maple Tactics — Thumbnail</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+  html,body{width:1280px;height:720px;overflow:hidden}
+  #thumb{position:relative;width:1280px;height:720px;
+    background:radial-gradient(ellipse at 50% 38%,#1d2b4a 0%,#121a30 55%,#0a0f1c 100%);overflow:hidden}
+  /* hex-ish board grid */
+  #grid{position:absolute;inset:0;
+    background-image:linear-gradient(rgba(120,160,255,.05) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(120,160,255,.05) 1px,transparent 1px);
+    background-size:96px 96px;
+    transform:perspective(700px) rotateX(46deg) scale(1.5) translateY(34%);
+    transform-origin:center bottom;opacity:.85}
+  .glow{position:absolute;border-radius:50%;filter:blur(60px);opacity:.55}
+  #g1{width:520px;height:520px;left:-120px;top:60px;background:#3a5cff}
+  #g2{width:560px;height:560px;right:-160px;top:30px;background:#ff5a3a}
+  #g3{width:420px;height:420px;left:50%;top:-120px;transform:translateX(-50%);background:#ffcf4a;opacity:.32}
+
+  /* meteor streaks */
+  .meteor{position:absolute;height:5px;border-radius:5px;
+    background:linear-gradient(90deg,transparent,#ffd27a,#ff7a3a);box-shadow:0 0 18px #ff9a4a;transform:rotate(34deg)}
+  #m1{width:340px;left:300px;top:70px}
+  #m2{width:220px;left:780px;top:40px;opacity:.8}
+  #m3{width:160px;left:540px;top:150px;opacity:.6}
+
+  /* sparkles */
+  .spark{position:absolute;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 12px #fff,0 0 22px #ffd27a}
+
+  .hero{position:absolute;image-rendering:pixelated;filter:drop-shadow(0 10px 18px #000a)}
+  #hero1{left:96px;bottom:30px;height:404px}
+  #boss{right:48px;bottom:24px;height:452px;filter:drop-shadow(0 12px 22px #000c) drop-shadow(0 0 26px #ff5a3a88)}
+  #hero2{right:436px;bottom:54px;height:286px;opacity:.95}
+
+  #titlewrap{position:absolute;left:0;right:0;top:300px;text-align:center;z-index:5}
+  #plate{position:absolute;left:50%;top:286px;transform:translateX(-50%);width:1180px;height:286px;
+    background:radial-gradient(ellipse at 50% 50%,#0a0f1ccc 0%,#0a0f1c88 50%,transparent 72%);z-index:4}
+  #title{font-size:148px;font-weight:900;letter-spacing:2px;line-height:.94;
+    background:linear-gradient(#fff3c0,#ffcf4a 45%,#f59e0b 78%,#b5740a);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 4px 0 #00000040;filter:drop-shadow(0 6px 10px #000a)}
+  #title .stroke{position:absolute;inset:0;color:transparent;-webkit-text-stroke:10px #1a1205;z-index:-1}
+  #sub{margin-top:10px;font-size:40px;font-weight:800;color:#dfe8ff;text-shadow:0 3px 8px #000}
+  #subko{margin-top:2px;font-size:30px;font-weight:700;color:#9fb4e6;text-shadow:0 2px 6px #000}
+  #badge{position:absolute;top:34px;left:50%;transform:translateX(-50%);
+    font-size:26px;font-weight:800;color:#0c1120;background:linear-gradient(#ffe27a,#ffb02e);
+    padding:8px 22px;border-radius:30px;box-shadow:0 6px 16px #0008;letter-spacing:1px}
+</style>
+</head>
+<body>
+<div id="thumb">
+  <div id="grid"></div>
+  <div class="glow" id="g1"></div><div class="glow" id="g2"></div><div class="glow" id="g3"></div>
+  <div class="meteor" id="m1"></div><div class="meteor" id="m2"></div><div class="meteor" id="m3"></div>
+
+  <div id="plate"></div>
+  <img class="hero" id="hero2" alt="">
+  <img class="hero" id="hero1" alt="">
+  <img class="hero" id="boss" alt="">
+
+  <div id="badge">⚔️ TFT AUTO BATTLER</div>
+  <div id="titlewrap">
+    <div id="title" style="position:relative"><span class="stroke">MAPLE TACTICS</span>MAPLE TACTICS</div>
+    <div id="sub">Job Auto Battler</div>
+    <div id="subko">메이플 택틱스 · 직업 오토배틀러</div>
+  </div>
+</div>
+<script>
+// build maplestory.io live character URLs (same itemIds as the game)
+function url(ids){var p=ids.filter(Boolean).map(function(i){return encodeURIComponent(JSON.stringify({itemId:i,region:'GMS',version:'255'}));});return 'https://maplestory.io/api/character/'+p.join(',')+'/stand1/0';}
+// Dark Knight (5-cost, boss helmet) — left hero
+document.getElementById('hero1').src=url([2000,12000,21744,30030,1050098,1002551,1102041,1402267]);
+// Arch Mage (5-cost) — secondary hero
+document.getElementById('hero2').src=url([2000,12000,21744,33000,1050097,1002551,1102041,1382277]);
+// Balrog boss
+document.getElementById('boss').src='https://maplestory.io/api/GMS/255/mob/6400006/render/stand';
+// sparkles
+var t=document.getElementById('thumb');
+[[260,180],[470,120],[700,210],[880,150],[1040,260],[600,300],[180,330],[980,360],[760,100],[420,260]].forEach(function(p){var s=document.createElement('div');s.className='spark';s.style.left=p[0]+'px';s.style.top=p[1]+'px';s.style.opacity=(0.4+Math.random()*0.6);var sc=0.6+Math.random()*1.6;s.style.transform='scale('+sc+')';t.appendChild(s);});
+</script>
+</body>
+</html>

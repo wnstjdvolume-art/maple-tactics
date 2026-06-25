@@ -48,7 +48,7 @@ TFT, Tactical, Auto Battler, Strategy, Combat
 - Description: First public build. 21 jobs across 1st–5th advancement, Class+Role synergies, star-up combine, per-job ultimate effects, item crafting, monster waves & bosses, ×1/×2/×3 speed. English default with Korean toggle. Balance/content updates to follow.
 
 ## 6) Thumbnail (16:9)
-Use image-gen prompt #1 (key art): 5-cost boss-helmet hero + meteor/chain-lightning effects on a hex board, bold "MAPLE TACTICS" title.
+Ready-made: **`thumbnail.png`** (1280×720) — English title "MAPLE TACTICS" + "Job Auto Battler" with Korean subtitle (메이플 택틱스 · 직업 오토배틀러), 5-cost boss-helmet hero + Arch Mage + Balrog boss, meteor/glow/sparkle FX. Regenerate by opening `thumbnail.html` and screenshotting at 1280×720 (edits itemIds/text there).
 
 ---
 [Checklist]
