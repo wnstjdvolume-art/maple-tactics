@@ -327,6 +327,12 @@ const MONSTERS = {
   yeti:   {name:'예티',     ava:'🦣', tier:4, traits:[], hp:920, ad:85, as:0.60, range:1},
   drake:  {name:'드레이크', ava:'🐊', tier:4, traits:[], hp:1000,ad:95, as:0.64, range:1},
   griffey:{name:'그리피',   ava:'🦅', tier:5, traits:[], hp:1150,ad:120,as:0.66, range:3},
+  // ===== 신규 몬스터(고티어 다양성) =====
+  wram:   {name:'울리램',   ava:'🐏', tier:3, traits:[], hp:680, ad:58, as:0.62, range:1},
+  monkey: {name:'정글몽키', ava:'🐒', tier:4, traits:[], hp:880, ad:98, as:0.70, range:1},
+  bram:   {name:'블랙램',   ava:'🐏', tier:4, traits:[], hp:960, ad:90, as:0.62, range:1},
+  crawler:{name:'스톤크롤러',ava:'🐛', tier:5, traits:[], hp:1400,ad:100,as:0.50, range:1},
+  gmush:  {name:'자이언트버섯',ava:'🍄',tier:5, traits:[], hp:1250,ad:124,as:0.60, range:1},
 };
 // ---- 보스 ----  특정 라운드에 등장
 const BOSS_LIST = {
@@ -1739,7 +1745,7 @@ const WEAPON={  // ★제대로 렌더되는 검증 무기로 큐레이션 (저�
   pirate1:1492000, brawler:1482000, viper:1482235,                                     // 해적: 기본건/너클→에픽
   aran:1442009, evan:1382100, mercedes:1522008, phantom:1362102, mechanic:1492015, kaiser:1402256, // Phase2 배치1: 폴암/스태프/듀얼보우건/케인/건/대검
   luminous:1382200, shade:1482100, battlemage:1372043, wildhunter:1462000, angelicbuster:1532000, cadena:1342000}; // Phase2 배치2: 스태프/너클/완드/석궁/소울슈터/카타라
-const MOB_ID={snail:100000,omush:100004,pig:1210101,boar:2230102,bmush:2220100,stump:100005,zombie:2230101,curseye:3230100,eye:3230100,necki:2130103,yeti:6300000,drake:2600224,griffey:2600007,mushmom:2600208,zakum:8800000,horntail:8810018,balrog:6400006,pinkbean:8820001,magnus:8850011,lotus:8880000,damien:8880100};
+const MOB_ID={snail:100000,omush:100004,pig:1210101,boar:2230102,bmush:2220100,stump:100005,zombie:2230101,curseye:3230100,eye:3230100,necki:2130103,yeti:6300000,drake:2600224,griffey:2600007,mushmom:2600208,zakum:8800000,horntail:8810018,balrog:6400006,pinkbean:8820001,magnus:8850011,lotus:8880000,damien:8880100,wram:8140110,monkey:5220002,bram:8140111,crawler:5250001,gmush:5250000};
 function charUrlLive(ids){var p=ids.filter(Boolean).map(function(id){return encodeURIComponent(JSON.stringify({itemId:id,region:'GMS',version:'255'}));});return 'https://maplestory.io/api/character/'+p.join(',')+'/stand1/0';}
 // Phase 2 각성직업: 같은 계열+코스트라도 구분되도록 유닛별 고유 헤어 + 모자 제거(헤어 노출)
 const SKIN={
@@ -1764,7 +1770,7 @@ window.addEventListener('keydown',function(e){ if(e.key==='c'||e.key==='C'){ FIV
 // ================= i18n (기본 영어, 한국어 선택) =================
 const EN={
   units:{swordman:'Swordman',magician:'Magician',archer1:'Archer',rogue:'Rogue',pirate1:'Pirate',page:'Page',wizard:'Thunder Wizard',hunter:'Hunter',assassin:'Assassin',brawler:'Brawler',knight:'Knight',priest:'Priest',ranger:'Ranger',hermit:'Hermit',hero:'Hero',bishop:'Bishop',bowmaster:'Bowmaster',nightlord:'Night Lord',darkknight:'Dark Knight',archmage:'Arch Mage',viper:'Viper',aran:'Aran',evan:'Evan',mercedes:'Mercedes',phantom:'Phantom',mechanic:'Mechanic',kaiser:'Kaiser',luminous:'Luminous',shade:'Shade',battlemage:'Battle Mage',wildhunter:'Wild Hunter',angelicbuster:'Angelic Buster',cadena:'Cadena'},
-  mons:{snail:'Snail',omush:'Orange Mushroom',pig:'Ribbon Pig',boar:'Wild Boar',stump:'Stump',bmush:'Blue Mushroom',necki:'Jr. Necki',eye:'Curse Eye',zombie:'Zombie Mushroom',yeti:'Yeti',drake:'Drake',griffey:'Griffey',mushmom:'Mushmom',zakum:'Zakum',horntail:'Horntail',balrog:'Balrog',pinkbean:'Pink Bean',magnus:'Magnus',lotus:'Lotus',damien:'Damien'},
+  mons:{snail:'Snail',omush:'Orange Mushroom',pig:'Ribbon Pig',boar:'Wild Boar',stump:'Stump',bmush:'Blue Mushroom',necki:'Jr. Necki',eye:'Curse Eye',zombie:'Zombie Mushroom',yeti:'Yeti',drake:'Drake',griffey:'Griffey',mushmom:'Mushmom',zakum:'Zakum',horntail:'Horntail',balrog:'Balrog',pinkbean:'Pink Bean',magnus:'Magnus',lotus:'Lotus',damien:'Damien',wram:'Woolly Ram',monkey:'Jungle Monkey',bram:'Black Ram',crawler:'Stone Crawler',gmush:'Giant Mushroom'},
   traits:{warrior:['Warrior','Bonus HP (Tank)'],mage:['Mage','Magic ATK'],archer:['Archer','Attack Speed'],thief:['Thief','Critical Hit'],pirate:['Pirate','HP & ATK'],guardian:['Guardian','Bonus HP'],striker:['Striker','Melee ATK'],marksman:['Marksman','Bonus ATK'],caster:['Caster','Magic Burst'],support:['Support','Combat-start Heal'],hero:['Hero','All-stat boost'],resistance:['Resistance','AtkSpd + DmgCut'],nova:['Nova','ATK + HP']},
   ui:{sub:'v1.0 · Items · Ultimates',prep:'Preparation',fighting:'⚔️ In Battle...',win:'🎉 Victory!',draw:'🤝 Draw',lose:'💀 Defeat',xp:'Buy XP',xpSub:'4 Gold → +4xp',reroll:'Refresh 🔄',rerollSub:'2 Gold',fight:'Start Battle ▶',placeHint:'Drag units<br>onto the board',synergy:'🔗 Synergies',comp:'🧩 Components',recipe:'📖 Recipes',item:'🎒 Items',help:'📋 Help',cont:'Continue',restart:'Restart',start:'Start',recipeTitle:'📖 Item Recipes',recipeDesc:'Combine 2 components to craft the item. (row × col)',close:'Close',nextGold:'Next-round gold',rWin:'Enemies wiped out.',rDraw:'Time out.',rLose:(d)=>`HP -${d}`,gotComp:'<br>🧩 Component obtained! (combine 2 on the right)',clear:'👑 Clear!',gameover:'☠️ Game Over',clearBody:(r)=>`You conquered all ${r} stages — Phase 2 complete!<br>A true tactician.`,goBody:(r)=>`Defeated at round ${r}.<br>Try again!`,phase2Title:'🌟 PHASE 2 — Awakening!',phase2Body:'Phase 1 cleared! Awakened classes — Hero, Resistance &amp; Nova (12 jobs) — now appear in the shop. New bosses await — survive to round 40!',upgrade:(n,s)=>`⭐ ${n} → ${s}★!`,benchFull:'Bench full',maxItem:'Max 3 items',slotFull:'Slots full (max 3)',returned:(n)=>`${n} item(s) returned to bag`,equipComp:'🧩 Component equipped',crafted:(n)=>`🔧 ${n} crafted!`,fiveStyle:(s)=>`5-cost style: ${s}`,cash:'Cash Crown',boss:'Boss Helmet',langBtn:'한국어',noGold:'Not enough gold',maxLevel:'Max level',levelUp:(n)=>`Level ${n}!`,cantCombine:'Cannot combine',equipped:(n)=>`🎁 ${n} equipped!`,placeFirst:'Place units on the board',bossAppear:(n)=>`⚠️ Boss: ${n}!`,rivalMatch:'⚔️ Rival Match! (PvP)',allyZone:'Place in your zone (bottom 3 rows)',playerZone:'Place in your zone (bottom)',boardCap:(lv,cap)=>`Board full (Lv${lv} = ${cap})`,synHint:'Place units on the board<br>to show synergies.',compHintSel:'→ click a piece (combine) or a unit (equip)',compHintIdle:'(click piece → combine/equip)',compEmpty:'Win battles to earn pieces →<br>combine 2 into an item',compSuffix:' (piece)',itemHintSel:'→ click a unit',itemHintIdle:'(click → unit)',itemEmpty:'Combine 2 pieces<br>to craft an item.',revive:'REVIVE!',enemyPrefix:'Enemy ',upBadge:'⭐UP!',costSuffix:'-cost',allSprites:(n)=>`All sprites (${n})`,intro:'Build a team of <b>MapleStory job characters</b> and hunt monster waves!<br><br>• Recruit jobs in the shop (1st~5th advancement = cost 1~5)<br>• <b>Click</b>=move, <b>Drag</b>=place precisely<br>• 3 of same job = ⭐ upgrade<br>• Class (Warrior/Mage/Archer/Thief/Pirate) + Role synergies<br>• 🎒 Click item → click unit = equip (max 3)<br>• R5·10·15·20 = boss (Mushmom→Zakum→Horntail→Balrog)<br><br>Survive 20 rounds!',helpHtml:'• Click shop card = recruit (to bench)<br>• <b>Click</b> unit = move board↔bench<br>• <b>Drag</b> unit = place precisely<br>• 3 of same job = ⭐2 auto-upgrade<br>• Click item → click unit = equip (max 3)<br>• Right-click unit = sell<br>• Enemies = monster waves / R5·10·15·20 = boss<br>• Gold interest: +1 per 10 gold (max +5)<br>• Win/loss streak bonus gold'}
 };
@@ -1795,7 +1801,6 @@ function setLang(l){
 var _lb=document.getElementById('langBtn'); if(_lb) _lb.onclick=function(){ setLang(LANG==='en'?'ko':'en'); };
 initPool(); resetGame(); setLang('en');
 </script>
-
 <script>
 /* ===== Phase 2 플레이테스트 빌드 — 라운드 21부터 시작 (강한 R20 클리어 팀 가정) =====
    MapleTactics.html 에 시작상태 주입만 추가. 본편 로직/밸런스 동일. */
@@ -1830,6 +1835,5 @@ initPool(); resetGame(); setLang('en');
   setTimeout(boot,120);
 })();
 </script>
-
 </body>
 </html>
