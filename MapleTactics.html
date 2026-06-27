@@ -167,7 +167,7 @@
   <div id="main">
     <div id="left">
       <div id="fieldWrap">
-        <canvas id="field" width="700" height="430"></canvas>
+        <canvas id="field" width="700" height="540"></canvas>
         <div id="log"></div>
       </div>
       <div id="bench"></div>
@@ -335,10 +335,10 @@ const BOSS_LIST = {
   horntail:{name:'혼테일', ava:'🐲', traits:[], hp:11000,ad:230, as:0.55, range:3},
   balrog:  {name:'발록',   ava:'👹', traits:[], hp:18000,ad:320, as:0.65, range:1},
   // ===== Phase 2 보스 (라운드 25/30/35/40) =====
-  pinkbean:{name:'핑크빈', ava:'🫧', traits:[], hp:26000,ad:380, as:0.55, range:3},
-  magnus:  {name:'매그너스',ava:'⚜️', traits:[], hp:36000,ad:470, as:0.55, range:1},
-  lotus:   {name:'스우',   ava:'🦇', traits:[], hp:48000,ad:580, as:0.60, range:4},
-  damien:  {name:'데미안', ava:'😈', traits:[], hp:64000,ad:720, as:0.62, range:1},
+  pinkbean:{name:'핑크빈', ava:'🫧', traits:[], hp:21000,ad:340, as:0.55, range:3},
+  magnus:  {name:'매그너스',ava:'⚜️', traits:[], hp:29000,ad:410, as:0.55, range:1},
+  lotus:   {name:'스우',   ava:'🦇', traits:[], hp:39000,ad:510, as:0.60, range:4},
+  damien:  {name:'데미안', ava:'😈', traits:[], hp:52000,ad:620, as:0.62, range:1},
 };
 const BOSS_ROUND = {5:'mushmom', 10:'zakum', 15:'horntail', 20:'balrog', 25:'pinkbean', 30:'magnus', 35:'lotus', 40:'damien'};
 const RIVAL_ROUND = {4:1, 8:1, 12:1, 16:1, 19:1, 23:1, 28:1, 33:1, 38:1};   // PvP 라이벌 매치(멀티 컨셉: 몬스터 메인 + 가끔 플레이어전)
@@ -408,7 +408,7 @@ const POOL_COUNT = {1:18,2:14,3:12,4:10,5:9}; // 비용별 유닛 보유 수량(
 
 // ---- 보드 좌표 ----  battlefield 7 cols x 6 rows. 아래 3행=플레이어, 위 3행=적
 const COLS=7, ROWS=6;
-const CELL=84, OX=14, OY=14; // 픽셀
+const CELL=84, OX=56, OY=18; // 픽셀 (보드를 캔버스 540 안에 가운데 정렬, 6행 잘림 방지)
 
 // ---- 게임 상태 ----
 let G = {
@@ -1231,12 +1231,12 @@ function genEnemyTeam(){
       let cands=monstersByTier(tier);
       while(!cands.length && tier>1){ tier--; cands=monstersByTier(tier); }
       const key=cands[Math.floor(Math.random()*cands.length)]||'snail';
-      const star = r>20 ? (Math.random()<0.6?2:1) : (r>9 && Math.random()<0.35 ? 2 : 1); // Phase2 2성 적 다수
+      const star = r>20 ? (Math.random()<0.38?2:1) : (r>9 && Math.random()<0.35 ? 2 : 1); // Phase2 2성 적(완화)
       team.push(makeCombatant({key,star},false));
     }
   }
   // 라운드 비례 능력치 스케일(보스 제외) — Phase2(>20)는 추가 가속
-  const sc=(1+(r-1)*0.040) * (r>20 ? (1.25+(r-20)*0.04) : 1);
+  const sc=(1+(r-1)*0.038) * (r>20 ? (1.10+(r-20)*0.022) : 1);   // Phase2 가속 완화
   team.forEach(c=>{ if(!c.isBoss){ c.maxHp=Math.round(c.maxHp*sc); c.hp=c.maxHp; c.ad=Math.round(c.ad*sc); } });
   // 위치 배치: 위쪽 3행(0,1,2)에 분산, 보스는 중앙 고정
   let idx=0;
