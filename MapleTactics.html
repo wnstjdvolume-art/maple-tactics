@@ -15,7 +15,7 @@
   #app{display:flex;flex-direction:column;height:100vh;width:100vw}
 
   /* Top bar */
-  #topbar{display:flex;align-items:center;gap:10px;row-gap:6px;flex-wrap:wrap;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);font-size:14px;flex:0 0 auto}
+  #topbar{display:flex;align-items:center;gap:10px;row-gap:6px;flex-wrap:wrap;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);font-size:14px;flex:0 0 auto;position:relative;z-index:30}
   #topbar .stat{white-space:nowrap}
   #phase{margin-left:auto;font-weight:700;white-space:nowrap}
   .stat{display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--panel2);border-radius:8px}
@@ -30,20 +30,20 @@
   /* Main */
   #main{flex:1 1 auto;display:flex;min-height:0}
   #left{flex:1 1 auto;display:flex;flex-direction:column;min-width:0}
-  #right{flex:0 0 230px;background:var(--panel);border-left:1px solid var(--line);padding:10px;overflow:auto}
+  #right{flex:0 0 230px;background:var(--panel);border-left:1px solid var(--line);padding:10px;overflow:auto;position:relative;z-index:20}
 
   /* Battlefield */
-  #fieldWrap{flex:1 1 auto;display:flex;align-items:center;justify-content:center;position:relative;min-height:0}
-  #field{background:radial-gradient(ellipse at center,#1b2740,#0c1120);border-radius:12px;box-shadow:0 8px 40px #0008;max-width:100%;height:auto}
+  #fieldWrap{flex:1 1 auto;display:flex;align-items:center;justify-content:center;position:relative;min-height:0;overflow:hidden;padding:10px;z-index:1}
+  #field{background:radial-gradient(ellipse at center,#1b2740,#0c1120);border-radius:12px;box-shadow:0 8px 40px #0008;max-width:100%;max-height:100%;height:auto}
   #log{position:absolute;top:8px;left:8px;font-size:12px;color:var(--muted);pointer-events:none;text-shadow:0 1px 2px #000}
 
   /* Bench */
-  #bench{flex:0 0 auto;display:flex;gap:6px;justify-content:center;padding:8px;background:var(--panel);border-top:1px solid var(--line)}
+  #bench{flex:0 0 auto;display:flex;gap:6px;justify-content:center;padding:8px;background:var(--panel);border-top:1px solid var(--line);position:relative;z-index:20}
   .slot{width:58px;height:58px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer}
   .slot.drop{outline:2px dashed var(--gold);outline-offset:-3px}
 
   /* Shop */
-  #shop{flex:0 0 auto;display:flex;gap:8px;align-items:stretch;padding:10px;background:var(--panel);border-top:1px solid var(--line)}
+  #shop{flex:0 0 auto;display:flex;gap:8px;align-items:stretch;padding:10px;background:var(--panel);border-top:1px solid var(--line);position:relative;z-index:20}
   .shopbtns{display:flex;flex-direction:column;gap:6px;justify-content:center}
   .btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:7px 10px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap}
   .btn:hover{border-color:var(--gold)}
@@ -433,6 +433,29 @@ function sfx(type){
     case 'death': tone(300,0.16,'sine',0.1,70); break;
   }
 }
+// ---------- 배경음악 (BGM, 절차적 루프 — 무료, 음소거 버튼으로 같이 꺼짐) ----------
+let bgmGain=null, bgmStarted=false, bgmStep=0, bgmTimer=null;
+// C-G-Am-F 진행, C장조 펜타토닉 아르페지오 (32스텝 루프)
+const BGM_MELODY=[523,659,784,659,523,0,659,0, 784,880,784,659,587,0,659,0, 880,1047,880,784,659,0,523,0, 698,880,1047,880,784,0,659,0];
+const BGM_BASS  =[131,131,131,131,131,131,131,131, 98,98,98,98,98,98,98,98, 110,110,110,110,110,110,110,110, 87,87,87,87,87,87,87,87];
+const BGM_STEP=0.21;   // 스텝당 초(≈약 140BPM 8분음표 느낌)
+function bgmTone(freq,dur,type,vol){ const ac=audio(); if(!ac||!bgmGain) return; const t=ac.currentTime;
+  const o=ac.createOscillator(), g=ac.createGain(); o.type=type; o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(bgmGain); o.start(t); o.stop(t+dur+0.03); }
+function bgmTick(){
+  const ac=audio(); if(!ac){ bgmTimer=setTimeout(bgmTick,BGM_STEP*1000); return; }
+  const m=BGM_MELODY[bgmStep], b=BGM_BASS[bgmStep];
+  if(m) bgmTone(m,0.18,'triangle',0.11);                 // 멜로디
+  if(bgmStep%4===0) bgmTone(b,0.44,'sine',0.13);         // 베이스
+  if(bgmStep%2===1) noiseBurst(0.015,0.012);             // 가벼운 하이햇
+  bgmStep=(bgmStep+1)%BGM_MELODY.length;
+  bgmTimer=setTimeout(bgmTick, BGM_STEP*1000);
+}
+function startBGM(){ if(bgmStarted) return; const ac=audio(); if(!ac) return;
+  bgmGain=ac.createGain(); bgmGain.gain.value=0.85; bgmGain.connect(masterGain); bgmStarted=true; bgmStep=0; bgmTick(); }
+function ensureBGM(){ const ac=audio(); if(ac && ac.state==='running') startBGM(); }  // 첫 사용자 입력 후 시작(자동재생 정책)
+document.addEventListener('pointerdown', ensureBGM);
 // ---------- 화면 연출 ----------
 let shakeAmt=0, hitStop=0, flashA=0, flashCol='#fff', gameSpeed=1, cutIn=null, cutCd=0, slowmo=0, ultBanner=null;
 const FX_RATE=0.35;   // 이펙트 재생 속도(낮을수록 천천히=피격감 충분히)
@@ -1659,7 +1682,7 @@ function showAllSprites(){
 const HAIR={warrior:30030,mage:33000,archer:30150,thief:30240,pirate:30060};   // 계열별 헤어
 const OVERALL2={  // 옷: 1·2코=기본의상(항상 착용·전신 overall), 3·4·5코=계열 갑옷(점점 고급). ★맨몸 금지(검수 반영) — 1코는 다리까지 덮는 전신 overall로 교체
   warrior:{1:1050633,2:1050447,3:1050021,4:1050062,5:1050098}, mage:{1:1050752,2:1050733,3:1050053,4:1050061,5:1050097},
-  archer:{1:1050010,2:1050674,3:1050055,4:1050063}, thief:{1:1050050,2:1050247,3:1050056,4:1050064}, pirate:{1:1050152,2:1051180,3:1050055,4:1050062,5:1050096}};
+  archer:{1:1050010,2:1050674,3:1050055,4:1050046}, thief:{1:1050050,2:1050247,3:1050056,4:1050064}, pirate:{1:1050152,2:1050003,3:1050055,4:1050062,5:1050096}};
 const HAT={warrior:1002005,mage:1003308,archer:1003135,thief:1002759,pirate:1002553}; // 전사=철투구(터프), 그 외=얼굴노출 직업모자. 2코부터
 const CAPE={4:1102041,5:1102041};                                              // 4·5코 망토
 const MOUNT={};                                                                // 탈것 폐기
