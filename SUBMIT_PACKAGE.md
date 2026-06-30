@@ -33,7 +33,7 @@ Rounds 1–3: 100% (1 piece). Round 4+: 50% on win. Boss win: +1.
 5 components (Sword/Armor/Glove/Orb/Cape) each 20%. Combine 2 = full item (fixed recipes).
 
 ■ Notice
-A fan-made entry for MapleStory Vibe Camp; not an official game of Nexon or MapleStory Universe (MSU). In-game currency "Gold" is unrelated to MESO/NESO.
+A fan-made entry for MapleStory Vibe Camp; not an official game of Nexon or MapleStory Universe (MSU). "Gold" is a fictional in-game currency with no real-world value.
 ```
 
 ## 4) Tags (≤5)
@@ -52,5 +52,5 @@ Ready-made: **`thumbnail.png`** (1280×720) — English title "MAPLE TACTICS" + 
 
 ---
 [Checklist]
-□ "Gold" only (no MESO)  □ Probability table in Description  □ Disclaimer present
+□ "Gold" only (no real-currency names)  □ Probability table in Description  □ Disclaimer present
 □ No official-implying labels (Nexon/MSU/MaplestoryU/N)  □ Thumbnail/title  □ Submit Google form after publish
