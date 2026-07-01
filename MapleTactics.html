@@ -111,6 +111,9 @@
   #unitPop .prow{font-size:13px;color:var(--txt);margin:3px 0}
   #unitPop .ptr{font-size:12px;color:var(--muted);margin:4px 0;line-height:1.5}
   #unitPop .pbtns{display:flex;gap:8px;justify-content:center;margin-top:12px}
+  /* 모바일 플로팅 전투시작 버튼(하단 고정, 항상 접근 가능) */
+  #mobFight{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:45;padding:13px 30px;font-size:16px;border-radius:26px;box-shadow:0 6px 22px #000a}
+  #mobFight.hidden{display:none!important}
 
   /* ===== 반응형: PC 좁은 창 잘림 방지 + 모바일 세로 최적화 ===== */
   /* 중간 폭(노트북/태블릿 가로): 우측 패널 약간 축소, 상점/벤치 줄바꿈 허용 */
@@ -149,6 +152,8 @@
     .shopbtns{flex-direction:row;flex:1 1 100%;justify-content:center;gap:8px}
     .card{flex:1 1 64px;min-width:60px;max-width:120px}
     #overlay .box{max-width:88vw;padding:22px 20px}
+    #mobFight{display:block}
+    #fightBtn{display:none}  /* 하단 상점의 전투시작은 플로팅 버튼으로 대체 */
   }
 </style>
 </head>
@@ -163,11 +168,13 @@
     <div class="stat" id="streakStat">🔥 <b id="streak">0</b></div>
     <div id="phase">Preparation <span id="timer"></span></div>
     <div style="display:flex;gap:3px;margin-left:8px" title="Battle speed">
-      <button class="btn spd on" data-spd="1" style="padding:4px 8px">×1</button>
-      <button class="btn spd" data-spd="2" style="padding:4px 8px">×2</button>
-      <button class="btn spd" data-spd="3" style="padding:4px 8px">×3</button>
+      <button class="btn spd" data-spd="1" style="padding:4px 7px">×1</button>
+      <button class="btn spd on" data-spd="2" style="padding:4px 7px">×2</button>
+      <button class="btn spd" data-spd="3" style="padding:4px 7px">×3</button>
+      <button class="btn spd" data-spd="4" style="padding:4px 7px">×4</button>
+      <button class="btn spd" data-spd="5" style="padding:4px 7px">×5</button>
     </div>
-         <button class="btn" id="viewAllBtn" style="margin-left:6px;padding:4px 9px;cursor:pointer" onclick="showAllSprites()">📋</button>
+         <button class="btn" id="viewAllBtn" style="margin-left:6px;padding:4px 9px;cursor:pointer;display:none" onclick="showAllSprites()">📋</button>
      <button class="btn" id="langBtn" style="margin-left:6px;padding:4px 9px" title="Language">한국어</button>
      <button class="btn" id="muteBtn" style="margin-left:6px;padding:4px 9px">🔊</button>
   </div>
@@ -219,6 +226,7 @@
   </div>
 </div>
 
+<button id="mobFight" class="btn primary">▶</button>
 <div id="overlay"><div class="box"><h1 id="ovTitle"></h1><div id="ovBody" style="color:var(--muted)"></div><button class="btn primary" id="ovBtn" style="margin-top:16px">Continue</button></div></div>
 <div id="recipeOverlay"><div class="box" style="max-width:520px"><h1 id="recipeTitle" style="font-size:18px">📖 Item Recipes</h1><div id="recipeGrid"></div><div class="help" id="recipeDescTxt" style="margin-top:8px">Combine 2 components to craft the item. (row × col)</div><button class="btn primary" id="recipeClose" style="margin-top:14px">Close</button></div></div>
 <div id="unitPopWrap"><div id="unitPop"></div></div>
@@ -500,7 +508,7 @@ function startBGM(){ if(bgmStarted) return; const ac=audio(); if(!ac) return;
 function ensureBGM(){ const ac=audio(); if(ac && ac.state==='running') startBGM(); }  // 첫 사용자 입력 후 시작(자동재생 정책)
 document.addEventListener('pointerdown', ensureBGM);
 // ---------- 화면 연출 ----------
-let shakeAmt=0, hitStop=0, flashA=0, flashCol='#fff', gameSpeed=1, cutIn=null, cutCd=0, slowmo=0, ultBanner=null;
+let shakeAmt=0, hitStop=0, flashA=0, flashCol='#fff', gameSpeed=2, cutIn=null, cutCd=0, slowmo=0, ultBanner=null;
 const FX_RATE=0.35;   // 이펙트 재생 속도(낮을수록 천천히=피격감 충분히)
 function addShake(n){ shakeAmt=Math.max(shakeAmt,n); }
 function screenFlash(col,a){ flashCol=col; flashA=Math.max(flashA,a); }
@@ -658,6 +666,40 @@ function openUnitPopup(u){
   document.getElementById('popClose').onclick=closeUnitPopup;
 }
 function closeUnitPopup(){ const w=$('#unitPopWrap'); if(w) w.style.display='none'; popUnit=null; }
+// 롱프레스 헬퍼(아이템 등 개별 요소) — 터치/펜에서만. lpFired로 뒤따르는 click 억제
+let lpFired=false;
+function attachLongPress(el, fn){
+  let tmr=null, sx=0, sy=0;
+  el.addEventListener('pointerdown', e=>{ if(e.pointerType==='mouse') return; lpFired=false; sx=e.clientX; sy=e.clientY;
+    tmr=setTimeout(()=>{ tmr=null; lpFired=true; fn(); }, 450); });
+  const cancel=()=>{ if(tmr){ clearTimeout(tmr); tmr=null; } };
+  el.addEventListener('pointermove', e=>{ if(tmr && Math.hypot(e.clientX-sx,e.clientY-sy)>8) cancel(); });
+  el.addEventListener('pointerup', cancel); el.addEventListener('pointercancel', cancel); el.addEventListener('pointerleave', cancel);
+}
+// 아이템 효과 기반 추천(어떤 유닛에게 어울리는지)
+function itemReco(fx){
+  if(!fx) return ''; const en=(LANG==='en');
+  if(fx.dr) return en?'For frontline tanks (Guardian/Warrior)':'전방 탱커(수호자/전사)에게';
+  if(fx.lifesteal) return en?'For melee bruiser carries':'근접 브루저 캐리에게';
+  if(fx.asPct&&(fx.ad||fx.adPct)) return en?'For attack-speed carries':'공속 딜러(궁수/도적)에게';
+  if(fx.asPct) return en?'For archers / attack-speed units':'궁수/공속 유닛에게';
+  if(fx.adPct||fx.ad) return en?'For damage carries (Striker/Marksman/Caster)':'딜러(근접/원거리/법사)에게';
+  if(fx.hp) return en?'For durability / frontline':'생존력·전방 유닛에게';
+  return '';
+}
+function openItemPopup(key){
+  const d=ITEMS[key]||COMPONENTS[key]; if(!d) return; popUnit=null;
+  const isComp=!!COMPONENTS[key];
+  let h='<div style="font-size:44px">'+d.icon+'</div>';
+  h+='<div class="pnm">'+d.name+(isComp?' <span style="font-size:11px;color:var(--muted)">'+t('compSuffix')+'</span>':'')+'</div>';
+  h+='<div class="prow">'+fxDesc(d.fx)+'</div>';
+  const reco=itemReco(d.fx); if(reco) h+='<div class="ptr">💡 '+reco+'</div>';
+  if(isComp){ let made=[]; for(let ik in ITEMS){ if((ITEMS[ik].recipe||[]).indexOf(key)>=0) made.push(ITEMS[ik].icon+ITEMS[ik].name); }
+    if(made.length) h+='<div class="ptr" style="margin-top:6px">🔧 '+made.join(' / ')+'</div>'; }
+  h+='<div class="pbtns"><button class="btn" id="popClose">'+t('close')+'</button></div>';
+  const pop=$('#unitPop'); if(!pop) return; pop.innerHTML=h; $('#unitPopWrap').style.display='flex';
+  document.getElementById('popClose').onclick=closeUnitPopup;
+}
 function boardCount(){ return G.board.filter(Boolean).length; }
 
 // ---------- XP/레벨 ----------
@@ -705,6 +747,7 @@ function renderTop(){
   $('#round').textContent=G.round;
   $('#streak').textContent=Math.abs(G.streak);
   $('#streakStat').firstChild.textContent = G.streak>=0?'🔥 ':'🧊 ';
+  var mf=document.getElementById('mobFight'); if(mf) mf.classList.toggle('hidden', G.phase!=='plan');  // 전투중엔 숨김
 }
 function cardHTML(key, ready){if(!key)return{cls:'card empty',html:''};const u=UNITS[key];const sb64=spriteBase64(key);const traitNames=u.traits.map(t=>TRAITS[t].icon+TRAITS[t].name).join(' ');const col=COST_COLOR[u.cost];const h=(ready?'<div class="upbadge">'+t('upBadge')+'</div>':'')+'<div class="cost">'+u.cost+'💰</div>'+(sb64?'<img src="'+sb64+'" style="width:56px;height:56px;image-rendering:pixelated;object-fit:contain;margin:2px auto;display:block" />':'<div class="ava">'+u.ava+'</div>')+'<div class="nm">'+u.name+'</div><div class="traits">'+traitNames+'</div><div class="costbar" style="background:'+col+'"></div>';return{cls:'card'+(ready?' ready':''),html:h};}
 function renderShop(){
@@ -761,7 +804,8 @@ function renderItems(){
       el.className='item'+(selComp===i?' sel':'');
       el.title=d.name+' — '+fxDesc(d.fx)+t('compSuffix');
       el.textContent=d.icon;
-      el.onclick=()=>{ if(G.phase!=='plan')return; if(selComp==null){selComp=i;renderItems();} else if(selComp===i){selComp=null;renderItems();} else combineComp(selComp,i); };
+      el.onclick=()=>{ if(lpFired)return; if(G.phase!=='plan')return; if(selComp==null){selComp=i;renderItems();} else if(selComp===i){selComp=null;renderItems();} else combineComp(selComp,i); };
+      attachLongPress(el, ()=>openItemPopup(it));   // 모바일: 길게눌러 설명/추천
       cb.appendChild(el);
     });
   }
@@ -777,7 +821,8 @@ function renderItems(){
     el.className='item'+(selItem===i?' sel':'');
     el.title=d.name+' — '+fxDesc(d.fx);
     el.textContent=d.icon;
-    el.onclick=()=>{ if(G.phase!=='plan')return; selItem = (selItem===i)?null:i; renderItems(); };
+    el.onclick=()=>{ if(lpFired)return; if(G.phase!=='plan')return; selItem = (selItem===i)?null:i; renderItems(); };
+    attachLongPress(el, ()=>openItemPopup(it));   // 모바일: 길게눌러 설명/추천
     bar.appendChild(el);
   });
 }
@@ -1743,6 +1788,7 @@ $$('#shop .card').forEach(c=>{
 $('#rerollBtn').onclick=()=>{ if(G.phase==='plan') reroll(false); };
 $('#xpBtn').onclick=()=>{ if(G.phase==='plan') buyXP(); };
 $('#fightBtn').onclick=()=>{ if(G.phase==='plan') startFight(); };
+{ var _mf=document.getElementById('mobFight'); if(_mf) _mf.onclick=()=>{ if(G.phase==='plan') startFight(); }; }
 $('#muteBtn').onclick=()=>{ audio(); muted=!muted; if(masterGain) masterGain.gain.value=muted?0:0.5; $('#muteBtn').textContent=muted?'🔇':'🔊'; };
 $$('.spd').forEach(b=>b.onclick=()=>{ gameSpeed=+b.dataset.spd; $$('.spd').forEach(x=>x.classList.toggle('on',x===b)); });
 $('#recipeBtn').onclick=()=>{ renderRecipeTable(); $('#recipeOverlay').style.display='flex'; };
