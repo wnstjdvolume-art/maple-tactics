@@ -114,6 +114,17 @@
   /* 모바일 플로팅 전투시작 버튼(하단 고정, 항상 접근 가능) */
   #mobFight{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:45;padding:13px 30px;font-size:16px;border-radius:26px;box-shadow:0 6px 22px #000a}
   #mobFight.hidden{display:none!important}
+  /* 명예의 전당 */
+  #hofWrap{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:#000c;padding:12px}
+  #hofBox{background:var(--panel);border:1px solid var(--gold);border-radius:14px;padding:18px 20px;width:400px;max-width:94vw;max-height:90vh;overflow:auto;text-align:center;box-shadow:0 12px 44px #000b}
+  #hofName{width:82%;padding:9px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);text-align:center;font-size:15px;outline:none}
+  #hofName:focus{border-color:var(--gold)}
+  #hofList{max-height:44vh;overflow:auto;text-align:left;margin-top:4px}
+  .hofrow{display:flex;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px}
+  .hofrow .rk{color:var(--gold);font-weight:800;width:22px;text-align:right}
+  .hofrow .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hofrow .rd{color:var(--muted);font-variant-numeric:tabular-nums}
+  .hofrow.me{background:#3a331f;border-radius:6px}
 
   /* ===== 반응형: PC 좁은 창 잘림 방지 + 모바일 세로 최적화 ===== */
   /* 중간 폭(노트북/태블릿 가로): 우측 패널 약간 축소, 상점/벤치 줄바꿈 허용 */
@@ -175,6 +186,7 @@
       <button class="btn spd" data-spd="5" style="padding:4px 7px">×5</button>
     </div>
          <button class="btn" id="viewAllBtn" style="margin-left:6px;padding:4px 9px;cursor:pointer;display:none" onclick="showAllSprites()">📋</button>
+     <button class="btn" id="hofBtn" style="margin-left:6px;padding:4px 9px" title="Hall of Fame">🏆</button>
      <button class="btn" id="langBtn" style="margin-left:6px;padding:4px 9px" title="Language">한국어</button>
      <button class="btn" id="muteBtn" style="margin-left:6px;padding:4px 9px">🔊</button>
   </div>
@@ -230,6 +242,21 @@
 <div id="overlay"><div class="box"><h1 id="ovTitle"></h1><div id="ovBody" style="color:var(--muted)"></div><button class="btn primary" id="ovBtn" style="margin-top:16px">Continue</button></div></div>
 <div id="recipeOverlay"><div class="box" style="max-width:520px"><h1 id="recipeTitle" style="font-size:18px">📖 Item Recipes</h1><div id="recipeGrid"></div><div class="help" id="recipeDescTxt" style="margin-top:8px">Combine 2 components to craft the item. (row × col)</div><button class="btn primary" id="recipeClose" style="margin-top:14px">Close</button></div></div>
 <div id="unitPopWrap"><div id="unitPop"></div></div>
+<div id="hofWrap"><div id="hofBox">
+  <h1 id="hofTitle" style="color:var(--gold);margin:0 0 6px;font-size:22px"></h1>
+  <div id="hofResult" class="help" style="font-size:14px;color:var(--muted);margin-bottom:8px;display:none"></div>
+  <div id="hofEntry" style="display:none;margin:8px 0 4px">
+    <input id="hofName" maxlength="16" placeholder="Nickname" />
+    <div class="help" id="hofTip" style="margin-top:6px;color:var(--muted)"></div>
+    <button class="btn primary" id="hofSave" style="margin-top:10px">Save</button>
+  </div>
+  <h3 id="hofListTitle" style="color:var(--gold);font-size:15px;margin:14px 0 4px">🏆 Hall of Fame</h3>
+  <div id="hofList"></div>
+  <div style="margin-top:14px;display:flex;gap:8px;justify-content:center">
+    <button class="btn primary" id="hofRestart" style="display:none">Restart</button>
+    <button class="btn" id="hofCloseBtn">Close</button>
+  </div>
+</div></div>
 
 <script>
 
@@ -700,6 +727,56 @@ function openItemPopup(key){
   const pop=$('#unitPop'); if(!pop) return; pop.innerHTML=h; $('#unitPopWrap').style.display='flex';
   document.getElementById('popClose').onclick=closeUnitPopup;
 }
+// ---------- 명예의 전당 (로컬 저장) ----------
+function escHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function hofLoad(){ try{ return JSON.parse(localStorage.getItem('mt_hof')||'[]'); }catch(e){ return []; } }
+function hofStore(a){ try{ localStorage.setItem('mt_hof', JSON.stringify(a.slice(0,30))); }catch(e){} }
+function hofAdd(name, round, result){
+  name=(name||'').trim().slice(0,16)||'Anonymous';
+  const rec={name, round, result, ts:Date.now()};
+  const a=hofLoad(); a.push(rec);
+  a.sort((x,y)=> (y.round-x.round) || ((y.result==='clear'?1:0)-(x.result==='clear'?1:0)) || (y.ts-x.ts));
+  hofStore(a);
+  try{ localStorage.setItem('mt_name', name); }catch(e){}
+  return rec;
+}
+let hofPending=null, hofMyTs=null;
+function renderHofList(){
+  const a=hofLoad(), el=$('#hofList'); if(!el) return;
+  if(!a.length){ el.innerHTML='<div class="help" style="padding:10px">'+t('hofEmpty')+'</div>'; return; }
+  let h=''; a.slice(0,15).forEach((r,i)=>{
+    h+='<div class="hofrow'+(r.ts===hofMyTs?' me':'')+'"><span class="rk">'+(i+1)+'</span><span class="nm">'+escHtml(r.name)+'</span><span class="rd">'+(r.result==='clear'?'👑 ':'')+'R'+r.round+'</span></div>';
+  });
+  el.innerHTML=h;
+}
+function showHof(entry, won){
+  const wrap=$('#hofWrap'); if(!wrap) return;
+  $('#hofListTitle').textContent='🏆 '+t('hofTitle');
+  $('#hofCloseBtn').textContent=t('close');
+  if(entry){
+    $('#hofTitle').textContent = won? t('clear') : t('gameover');
+    $('#hofResult').innerHTML = won? t('clearBody')(FINAL_ROUND) : t('goBody')(G.round);
+    $('#hofResult').style.display='block';
+    $('#hofEntry').style.display='block';
+    $('#hofRestart').style.display='inline-block';
+    $('#hofRestart').textContent=t('restart');
+    $('#hofSave').textContent=t('hofSaveBtn');
+    $('#hofName').placeholder=t('hofName');
+    let last=''; try{ last=localStorage.getItem('mt_name')||''; }catch(e){}
+    $('#hofName').value=last;
+    $('#hofTip').textContent=t('hofTip');
+    hofPending={round:(won?FINAL_ROUND:G.round), result:won?'clear':'defeat'}; hofMyTs=null;
+  } else {
+    $('#hofTitle').textContent='🏆 '+t('hofTitle');
+    $('#hofResult').style.display='none';
+    $('#hofEntry').style.display='none';
+    $('#hofRestart').style.display='none';
+    hofPending=null;
+  }
+  renderHofList();
+  wrap.style.display='flex';
+}
+function closeHof(){ const w=$('#hofWrap'); if(w) w.style.display='none'; }
 function boardCount(){ return G.board.filter(Boolean).length; }
 
 // ---------- XP/레벨 ----------
@@ -1604,9 +1681,7 @@ function showResult(win,draw,dmg){
 }
 function gameOver(won){
   G.phase='over';
-  overlay(won?t('clear'):t('gameover'),
-    won?t('clearBody')(FINAL_ROUND):t('goBody')(G.round),
-    ()=>{ resetGame(); }, 0, t('restart'));
+  showHof(true, won);   // 게임종료 → 명예의 전당 닉네임 등록 화면
 }
 
 // ---------- 오버레이/이펙트 ----------
@@ -1794,6 +1869,12 @@ $$('.spd').forEach(b=>b.onclick=()=>{ gameSpeed=+b.dataset.spd; $$('.spd').forEa
 $('#recipeBtn').onclick=()=>{ renderRecipeTable(); $('#recipeOverlay').style.display='flex'; };
 $('#recipeClose').onclick=()=>{ $('#recipeOverlay').style.display='none'; };
 $('#unitPopWrap').onclick=(e)=>{ if(e.target && e.target.id==='unitPopWrap') closeUnitPopup(); };
+// 명예의 전당
+$('#hofBtn').onclick=()=>showHof(false);
+$('#hofCloseBtn').onclick=closeHof;
+$('#hofRestart').onclick=()=>{ closeHof(); resetGame(); };
+$('#hofSave').onclick=()=>{ if(hofPending){ const rec=hofAdd($('#hofName').value, hofPending.round, hofPending.result); hofMyTs=rec.ts; hofPending=null; $('#hofEntry').style.display='none'; renderHofList(); } };
+$('#hofWrap').onclick=(e)=>{ if(e.target && e.target.id==='hofWrap' && $('#hofEntry').style.display==='none') closeHof(); };
 
 // 키보드 단축키
 window.addEventListener('keydown',e=>{
@@ -1868,9 +1949,9 @@ const EN={
   units:{swordman:'Swordman',magician:'Magician',archer1:'Archer',rogue:'Rogue',pirate1:'Pirate',page:'Page',wizard:'Thunder Wizard',hunter:'Hunter',assassin:'Assassin',brawler:'Brawler',knight:'Knight',priest:'Priest',ranger:'Ranger',hermit:'Hermit',hero:'Hero',bishop:'Bishop',bowmaster:'Bowmaster',nightlord:'Night Lord',darkknight:'Dark Knight',archmage:'Arch Mage',viper:'Viper',aran:'Aran',evan:'Evan',mercedes:'Mercedes',phantom:'Phantom',mechanic:'Mechanic',kaiser:'Kaiser',luminous:'Luminous',shade:'Shade',battlemage:'Battle Mage',wildhunter:'Wild Hunter',angelicbuster:'Angelic Buster',cadena:'Cadena'},
   mons:{snail:'Snail',omush:'Orange Mushroom',pig:'Ribbon Pig',boar:'Wild Boar',stump:'Stump',bmush:'Blue Mushroom',necki:'Jr. Necki',eye:'Curse Eye',zombie:'Zombie Mushroom',yeti:'Yeti',drake:'Drake',griffey:'Griffey',mushmom:'Mushmom',zakum:'Zakum',horntail:'Horntail',balrog:'Balrog',pinkbean:'Pink Bean',magnus:'Magnus',lotus:'Lotus',damien:'Damien',wram:'Woolly Ram',monkey:'Jungle Monkey',bram:'Black Ram',crawler:'Stone Crawler',gmush:'Giant Mushroom'},
   traits:{warrior:['Warrior','Bonus HP (Tank)'],mage:['Mage','Magic ATK'],archer:['Archer','Attack Speed'],thief:['Thief','Critical Hit'],pirate:['Pirate','HP & ATK'],guardian:['Guardian','Bonus HP'],striker:['Striker','Melee ATK'],marksman:['Marksman','Bonus ATK'],caster:['Caster','Magic Burst'],support:['Support','Combat-start Heal'],hero:['Hero','All-stat boost'],resistance:['Resistance','AtkSpd + DmgCut'],nova:['Nova','ATK + HP']},
-  ui:{sub:'v1.0 · Items · Ultimates',prep:'Preparation',fighting:'⚔️ In Battle...',win:'🎉 Victory!',draw:'🤝 Draw',lose:'💀 Defeat',xp:'Buy XP',xpSub:'4 Gold → +4xp',reroll:'Refresh 🔄',rerollSub:'2 Gold',fight:'Start Battle ▶',placeHint:'Drag units<br>onto the board',synergy:'🔗 Synergies',comp:'🧩 Components',recipe:'📖 Recipes',item:'🎒 Items',help:'📋 Help',cont:'Continue',restart:'Restart',start:'Start',recipeTitle:'📖 Item Recipes',recipeDesc:'Combine 2 components to craft the item. (row × col)',close:'Close',nextGold:'Next-round gold',rWin:'Enemies wiped out.',rDraw:'Time out.',rLose:(d)=>`HP -${d}`,gotComp:'<br>🧩 Component obtained! (combine 2 on the right)',clear:'👑 Clear!',gameover:'☠️ Game Over',clearBody:(r)=>`You conquered all ${r} stages — Phase 2 complete!<br>A true tactician.`,goBody:(r)=>`Defeated at round ${r}.<br>Try again!`,phase2Title:'🌟 PHASE 2 — Awakening!',phase2Body:'Phase 1 cleared! Awakened classes — Hero, Resistance &amp; Nova (12 jobs) — now appear in the shop. New bosses await — survive to round 40!',upgrade:(n,s)=>`⭐ ${n} → ${s}★!`,benchFull:'Bench full',maxItem:'Max 3 items',slotFull:'Slots full (max 3)',returned:(n)=>`${n} item(s) returned to bag`,equipComp:'🧩 Component equipped',crafted:(n)=>`🔧 ${n} crafted!`,fiveStyle:(s)=>`5-cost style: ${s}`,cash:'Cash Crown',boss:'Boss Helmet',langBtn:'한국어',noGold:'Not enough gold',maxLevel:'Max level',levelUp:(n)=>`Level ${n}!`,cantCombine:'Cannot combine',equipped:(n)=>`🎁 ${n} equipped!`,placeFirst:'Place units on the board',bossAppear:(n)=>`⚠️ Boss: ${n}!`,rivalMatch:'⚔️ Rival Match! (PvP)',allyZone:'Place in your zone (bottom 3 rows)',playerZone:'Place in your zone (bottom)',boardCap:(lv,cap)=>`Board full (Lv${lv} = ${cap})`,synHint:'Place units on the board<br>to show synergies.',compHintSel:'→ click a piece (combine) or a unit (equip)',compHintIdle:'(click piece → combine/equip)',compEmpty:'Win battles to earn pieces →<br>combine 2 into an item',compSuffix:' (piece)',itemHintSel:'→ click a unit',itemHintIdle:'(click → unit)',itemEmpty:'Combine 2 pieces<br>to craft an item.',revive:'REVIVE!',enemyPrefix:'Enemy ',upBadge:'⭐UP!',costSuffix:'-cost',allSprites:(n)=>`All sprites (${n})`,sell:(g)=>`Sell (+${g})`,intro:'Build a team of <b>MapleStory job characters</b> and hunt monster waves!<br><br>• Recruit jobs in the shop (1st~5th advancement = cost 1~5)<br>• <b>Click</b>=move, <b>Drag</b>=place precisely<br>• 3 of same job = ⭐ upgrade<br>• Class (Warrior/Mage/Archer/Thief/Pirate) + Role synergies<br>• 🎒 Click item → click unit = equip (max 3)<br>• R5·10·15·20 = boss (Mushmom→Zakum→Horntail→Balrog)<br><br>Survive 20 rounds!',helpHtml:'• Click shop card = recruit (to bench)<br>• <b>Click</b> unit = move board↔bench<br>• <b>Drag</b> unit = place precisely<br>• 3 of same job = ⭐2 auto-upgrade<br>• Click item → click unit = equip (max 3)<br>• Right-click / long-press unit = info &amp; sell<br>• Enemies = monster waves / R5·10·15·20 = boss<br>• Gold interest: +1 per 10 gold (max +5)<br>• Win/loss streak bonus gold'}
+  ui:{sub:'v1.0 · Items · Ultimates',prep:'Preparation',fighting:'⚔️ In Battle...',win:'🎉 Victory!',draw:'🤝 Draw',lose:'💀 Defeat',xp:'Buy XP',xpSub:'4 Gold → +4xp',reroll:'Refresh 🔄',rerollSub:'2 Gold',fight:'Start Battle ▶',placeHint:'Drag units<br>onto the board',synergy:'🔗 Synergies',comp:'🧩 Components',recipe:'📖 Recipes',item:'🎒 Items',help:'📋 Help',cont:'Continue',restart:'Restart',start:'Start',recipeTitle:'📖 Item Recipes',recipeDesc:'Combine 2 components to craft the item. (row × col)',close:'Close',nextGold:'Next-round gold',rWin:'Enemies wiped out.',rDraw:'Time out.',rLose:(d)=>`HP -${d}`,gotComp:'<br>🧩 Component obtained! (combine 2 on the right)',clear:'👑 Clear!',gameover:'☠️ Game Over',clearBody:(r)=>`You conquered all ${r} stages — Phase 2 complete!<br>A true tactician.`,goBody:(r)=>`Defeated at round ${r}.<br>Try again!`,phase2Title:'🌟 PHASE 2 — Awakening!',phase2Body:'Phase 1 cleared! Awakened classes — Hero, Resistance &amp; Nova (12 jobs) — now appear in the shop. New bosses await — survive to round 40!',upgrade:(n,s)=>`⭐ ${n} → ${s}★!`,benchFull:'Bench full',maxItem:'Max 3 items',slotFull:'Slots full (max 3)',returned:(n)=>`${n} item(s) returned to bag`,equipComp:'🧩 Component equipped',crafted:(n)=>`🔧 ${n} crafted!`,fiveStyle:(s)=>`5-cost style: ${s}`,cash:'Cash Crown',boss:'Boss Helmet',langBtn:'한국어',noGold:'Not enough gold',maxLevel:'Max level',levelUp:(n)=>`Level ${n}!`,cantCombine:'Cannot combine',equipped:(n)=>`🎁 ${n} equipped!`,placeFirst:'Place units on the board',bossAppear:(n)=>`⚠️ Boss: ${n}!`,rivalMatch:'⚔️ Rival Match! (PvP)',allyZone:'Place in your zone (bottom 3 rows)',playerZone:'Place in your zone (bottom)',boardCap:(lv,cap)=>`Board full (Lv${lv} = ${cap})`,synHint:'Place units on the board<br>to show synergies.',compHintSel:'→ click a piece (combine) or a unit (equip)',compHintIdle:'(click piece → combine/equip)',compEmpty:'Win battles to earn pieces →<br>combine 2 into an item',compSuffix:' (piece)',itemHintSel:'→ click a unit',itemHintIdle:'(click → unit)',itemEmpty:'Combine 2 pieces<br>to craft an item.',revive:'REVIVE!',enemyPrefix:'Enemy ',upBadge:'⭐UP!',costSuffix:'-cost',allSprites:(n)=>`All sprites (${n})`,sell:(g)=>`Sell (+${g})`,hofTitle:'Hall of Fame',hofName:'Nickname',hofSaveBtn:'Register',hofTip:'Tip: use the same name as your Telegram ID!',hofEmpty:'No records yet — be the first!',intro:'Build a team of <b>MapleStory job characters</b> and hunt monster waves!<br><br>• Recruit jobs in the shop (1st~5th advancement = cost 1~5)<br>• <b>Click</b>=move, <b>Drag</b>=place precisely<br>• 3 of same job = ⭐ upgrade<br>• Class (Warrior/Mage/Archer/Thief/Pirate) + Role synergies<br>• 🎒 Click item → click unit = equip (max 3)<br>• R5·10·15·20 = boss (Mushmom→Zakum→Horntail→Balrog)<br><br>Survive 20 rounds!',helpHtml:'• Click shop card = recruit (to bench)<br>• <b>Click</b> unit = move board↔bench<br>• <b>Drag</b> unit = place precisely<br>• 3 of same job = ⭐2 auto-upgrade<br>• Click item → click unit = equip (max 3)<br>• Right-click / long-press unit = info &amp; sell<br>• Enemies = monster waves / R5·10·15·20 = boss<br>• Gold interest: +1 per 10 gold (max +5)<br>• Win/loss streak bonus gold'}
 };
-const KO={ui:{sub:'v1.0 · 조각장착·궁극기',prep:'준비 단계',fighting:'⚔️ 전투 중...',win:'🎉 승리!',draw:'🤝 무승부',lose:'💀 패배',xp:'XP 구매',xpSub:'4골드 → +4xp',reroll:'새로고침 🔄',rerollSub:'2골드',fight:'전투 시작 ▶',placeHint:'유닛을 위 보드로<br>드래그해 배치',synergy:'🔗 시너지',comp:'🧩 조각',recipe:'📖 조합표',item:'🎒 아이템',help:'📋 도움말',cont:'계속',restart:'다시 시작',start:'시작하기',recipeTitle:'📖 아이템 조합표',recipeDesc:'조각 2개를 합치면 해당 아이템이 만들어집니다. (행 × 열)',close:'닫기',nextGold:'다음 라운드 골드',rWin:'적을 전멸시켰습니다.',rDraw:'시간 초과.',rLose:(d)=>`체력 -${d}`,gotComp:'<br>🧩 조각 획득! (우측에서 2개 조합)',clear:'👑 클리어!',gameover:'☠️ 게임 오버',clearBody:(r)=>`${r}개 스테이지를 모두 정복 — Phase 2 완료!<br>진정한 택틱션.`,goBody:(r)=>`${r}라운드에서 패배.<br>다시 도전해보세요!`,phase2Title:'🌟 PHASE 2 — 각성!',phase2Body:'Phase 1 클리어! 각성 직업 — 영웅·레지스탕스·노바(12직업) — 이 상점에 등장합니다. 새 보스가 기다립니다 — 40라운드까지 생존하세요!',upgrade:(n,s)=>`⭐ ${n} ${s}성 승급!`,benchFull:'벤치 가득참',maxItem:'아이템은 최대 3개',slotFull:'슬롯 가득(최대 3)',returned:(n)=>`가방으로 반환된 아이템 ${n}개`,equipComp:'🧩 조각 장착',crafted:(n)=>`🔧 ${n} 완성!`,fiveStyle:(s)=>`5코 스타일: ${s}`,cash:'캐시 크라운',boss:'보스 투구',langBtn:'English',noGold:'골드 부족',maxLevel:'최대 레벨',levelUp:(n)=>`레벨 ${n}!`,cantCombine:'조합 불가',equipped:(n)=>`🎁 ${n} 장착!`,placeFirst:'보드에 유닛을 배치하세요',bossAppear:(n)=>`⚠️ 보스 등장: ${n}!`,rivalMatch:'⚔️ 라이벌 매치! (PvP)',allyZone:'아군 진영(아래 3줄)에만 배치',playerZone:'플레이어 진영(아래)에만 배치',boardCap:(lv,cap)=>`보드 정원 초과 (Lv${lv} = ${cap})`,synHint:'보드에 유닛을 배치하면<br>시너지가 표시됩니다.',compHintSel:'→ 조각 클릭(조합) or 캐릭터 클릭(장착)',compHintIdle:'(조각클릭→조합/장착)',compEmpty:'전투 보상으로 조각 획득 →<br>2개 합쳐 아이템 제작',compSuffix:' (조각)',itemHintSel:'→ 캐릭터 클릭',itemHintIdle:'(클릭→캐릭터)',itemEmpty:'조각 2개를 합쳐<br>아이템을 만드세요.',revive:'부활!',enemyPrefix:'적 ',upBadge:'⭐승급!',costSuffix:'코스트',allSprites:(n)=>`모든 스프라이트 (${n}종)`,sell:(g)=>`판매 (+${g})`,intro:'메이플 <b>직업 캐릭터</b>로 팀을 꾸려 몬스터 웨이브를 사냥하세요!<br><br>• 상점에서 직업 영입(1~5차전직 = 코스트1~5)<br>• 유닛 <b>클릭</b>=올리기/내리기, <b>드래그</b>=정밀 배치<br>• 같은 직업 3개 = ⭐ 승급<br>• 계열(전사/마법사/궁수/도적/해적) + 역할 시너지<br>• 🎒 아이템 클릭 → 캐릭터 클릭 = 장착(최대3)<br>• 5·10·15·20라운드 = 보스전(머쉬맘→자쿰→혼테일→발록)<br><br>20라운드 생존이 목표!',helpHtml:'• 상점 카드 클릭 = 직업 영입(벤치로)<br>• 유닛 <b>클릭</b> = 보드↔벤치 올리기/내리기<br>• 유닛 <b>드래그</b> = 원하는 칸에 정밀 배치<br>• 같은 직업 3개 = ⭐2 자동전직(승급)<br>• 아이템 클릭 → 캐릭터 클릭 = 장착(최대3)<br>• 유닛 우클릭 / 길게누르기 = 정보·판매<br>• 적 = 몬스터 웨이브 / 5·10·15·20R = 보스<br>• 골드 이자: 10골드당 +1 (최대 +5)<br>• 연승/연패 보너스 골드'}};
+const KO={ui:{sub:'v1.0 · 조각장착·궁극기',prep:'준비 단계',fighting:'⚔️ 전투 중...',win:'🎉 승리!',draw:'🤝 무승부',lose:'💀 패배',xp:'XP 구매',xpSub:'4골드 → +4xp',reroll:'새로고침 🔄',rerollSub:'2골드',fight:'전투 시작 ▶',placeHint:'유닛을 위 보드로<br>드래그해 배치',synergy:'🔗 시너지',comp:'🧩 조각',recipe:'📖 조합표',item:'🎒 아이템',help:'📋 도움말',cont:'계속',restart:'다시 시작',start:'시작하기',recipeTitle:'📖 아이템 조합표',recipeDesc:'조각 2개를 합치면 해당 아이템이 만들어집니다. (행 × 열)',close:'닫기',nextGold:'다음 라운드 골드',rWin:'적을 전멸시켰습니다.',rDraw:'시간 초과.',rLose:(d)=>`체력 -${d}`,gotComp:'<br>🧩 조각 획득! (우측에서 2개 조합)',clear:'👑 클리어!',gameover:'☠️ 게임 오버',clearBody:(r)=>`${r}개 스테이지를 모두 정복 — Phase 2 완료!<br>진정한 택틱션.`,goBody:(r)=>`${r}라운드에서 패배.<br>다시 도전해보세요!`,phase2Title:'🌟 PHASE 2 — 각성!',phase2Body:'Phase 1 클리어! 각성 직업 — 영웅·레지스탕스·노바(12직업) — 이 상점에 등장합니다. 새 보스가 기다립니다 — 40라운드까지 생존하세요!',upgrade:(n,s)=>`⭐ ${n} ${s}성 승급!`,benchFull:'벤치 가득참',maxItem:'아이템은 최대 3개',slotFull:'슬롯 가득(최대 3)',returned:(n)=>`가방으로 반환된 아이템 ${n}개`,equipComp:'🧩 조각 장착',crafted:(n)=>`🔧 ${n} 완성!`,fiveStyle:(s)=>`5코 스타일: ${s}`,cash:'캐시 크라운',boss:'보스 투구',langBtn:'English',noGold:'골드 부족',maxLevel:'최대 레벨',levelUp:(n)=>`레벨 ${n}!`,cantCombine:'조합 불가',equipped:(n)=>`🎁 ${n} 장착!`,placeFirst:'보드에 유닛을 배치하세요',bossAppear:(n)=>`⚠️ 보스 등장: ${n}!`,rivalMatch:'⚔️ 라이벌 매치! (PvP)',allyZone:'아군 진영(아래 3줄)에만 배치',playerZone:'플레이어 진영(아래)에만 배치',boardCap:(lv,cap)=>`보드 정원 초과 (Lv${lv} = ${cap})`,synHint:'보드에 유닛을 배치하면<br>시너지가 표시됩니다.',compHintSel:'→ 조각 클릭(조합) or 캐릭터 클릭(장착)',compHintIdle:'(조각클릭→조합/장착)',compEmpty:'전투 보상으로 조각 획득 →<br>2개 합쳐 아이템 제작',compSuffix:' (조각)',itemHintSel:'→ 캐릭터 클릭',itemHintIdle:'(클릭→캐릭터)',itemEmpty:'조각 2개를 합쳐<br>아이템을 만드세요.',revive:'부활!',enemyPrefix:'적 ',upBadge:'⭐승급!',costSuffix:'코스트',allSprites:(n)=>`모든 스프라이트 (${n}종)`,sell:(g)=>`판매 (+${g})`,hofTitle:'명예의 전당',hofName:'닉네임',hofSaveBtn:'등록',hofTip:'팁: 텔레그램 ID와 동일하게 입력하면 좋아요!',hofEmpty:'아직 기록이 없어요 — 첫 주인공이 되어보세요!',intro:'메이플 <b>직업 캐릭터</b>로 팀을 꾸려 몬스터 웨이브를 사냥하세요!<br><br>• 상점에서 직업 영입(1~5차전직 = 코스트1~5)<br>• 유닛 <b>클릭</b>=올리기/내리기, <b>드래그</b>=정밀 배치<br>• 같은 직업 3개 = ⭐ 승급<br>• 계열(전사/마법사/궁수/도적/해적) + 역할 시너지<br>• 🎒 아이템 클릭 → 캐릭터 클릭 = 장착(최대3)<br>• 5·10·15·20라운드 = 보스전(머쉬맘→자쿰→혼테일→발록)<br><br>20라운드 생존이 목표!',helpHtml:'• 상점 카드 클릭 = 직업 영입(벤치로)<br>• 유닛 <b>클릭</b> = 보드↔벤치 올리기/내리기<br>• 유닛 <b>드래그</b> = 원하는 칸에 정밀 배치<br>• 같은 직업 3개 = ⭐2 자동전직(승급)<br>• 아이템 클릭 → 캐릭터 클릭 = 장착(최대3)<br>• 유닛 우클릭 / 길게누르기 = 정보·판매<br>• 적 = 몬스터 웨이브 / 5·10·15·20R = 보스<br>• 골드 이자: 10골드당 +1 (최대 +5)<br>• 연승/연패 보너스 골드'}};
 var LANG='en';
 function t(k){ return (LANG==='en'?EN.ui:KO.ui)[k]; }
 // 한국어 원본 보존(최초 1회)
