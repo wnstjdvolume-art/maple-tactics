@@ -167,6 +167,8 @@
     #fightBtn{display:none}  /* 하단 상점의 전투시작은 플로팅 버튼으로 대체 */
   }
 </style>
+<!-- 전역 리더보드(Verse8 GameServer). 스탠드얼론에선 조용히 비활성→로컬 명예의전당 폴백 -->
+<script type="module" src="./src/leaderboard.js"></script>
 </head>
 <body>
 <div id="app">
@@ -749,6 +751,21 @@ function renderHofList(){
   });
   el.innerHTML=h;
 }
+// 전역 랭킹(GameServer) 렌더 — 연결됐을 때만
+function renderHofGlobal(rows, me){
+  const el=$('#hofList'); if(!el) return;
+  if(!rows || !rows.length){ return; }   // 데이터 없으면 로컬 유지
+  let h=''; rows.slice(0,15).forEach((r,i)=>{
+    const nm=r.name||(r.account?String(r.account).slice(0,8):'???');
+    const isMe=me && r.account===me;
+    h+='<div class="hofrow'+(isMe?' me':'')+'"><span class="rk">'+(i+1)+'</span><span class="nm">'+escHtml(nm)+'</span><span class="rd">R'+r.round+'</span></div>';
+  });
+  el.innerHTML=h;
+  const lt=$('#hofListTitle'); if(lt) lt.textContent='🌐 '+t('hofTitle');   // 전역 표시
+}
+function refreshGlobalHof(){
+  if(window.fetchGlobalRankings){ window.fetchGlobalRankings().then(d=>{ if(d&&d.rows&&d.rows.length) renderHofGlobal(d.rows,d.me); }).catch(()=>{}); }
+}
 function showHof(entry, won){
   const wrap=$('#hofWrap'); if(!wrap) return;
   $('#hofListTitle').textContent='🏆 '+t('hofTitle');
@@ -774,6 +791,7 @@ function showHof(entry, won){
     hofPending=null;
   }
   renderHofList();
+  refreshGlobalHof();   // 연결됐으면 전역 랭킹으로 교체
   wrap.style.display='flex';
 }
 function closeHof(){ const w=$('#hofWrap'); if(w) w.style.display='none'; }
@@ -1873,7 +1891,9 @@ $('#unitPopWrap').onclick=(e)=>{ if(e.target && e.target.id==='unitPopWrap') clo
 $('#hofBtn').onclick=()=>showHof(false);
 $('#hofCloseBtn').onclick=closeHof;
 $('#hofRestart').onclick=()=>{ closeHof(); resetGame(); };
-$('#hofSave').onclick=()=>{ if(hofPending){ const rec=hofAdd($('#hofName').value, hofPending.round, hofPending.result); hofMyTs=rec.ts; hofPending=null; $('#hofEntry').style.display='none'; renderHofList(); } };
+$('#hofSave').onclick=()=>{ if(hofPending){ const rec=hofAdd($('#hofName').value, hofPending.round, hofPending.result); hofMyTs=rec.ts;
+  if(window.submitToLeaderboard){ try{ window.submitToLeaderboard(hofPending.round, rec.name); }catch(e){} }   // 전역 제출(연결 시)
+  hofPending=null; $('#hofEntry').style.display='none'; renderHofList(); refreshGlobalHof(); } };
 $('#hofWrap').onclick=(e)=>{ if(e.target && e.target.id==='hofWrap' && $('#hofEntry').style.display==='none') closeHof(); };
 
 // 키보드 단축키
