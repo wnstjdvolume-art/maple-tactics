@@ -1,0 +1,18 @@
+{
+  "name": "maple-tactics",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Maple Tactics — Job Auto Battler (Verse8/MSU). Client build (Vite) + GameServer leaderboard.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@agent8/gameserver": "^1.10.2"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
+  }
+}
